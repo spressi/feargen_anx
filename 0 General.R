@@ -78,8 +78,9 @@ path2 = "C:/Users/mar84qk/Dropbox/Arbeit/C10 - Gamer Fear/3 Diagnostic Generaliz
 
 path.rois = "2 Material/Look At Me 3 Anx/Stimuli/mask/" %>% paste0(path2, .)
 
-path.rds = "Analyse/" %>% paste0(path, .) #Janna
+#path.rds = "Analyse/" %>% paste0(path, .) #Janna
 #path.rds = "3 Analysis/main Anx/" %>% paste0(path2, .) #Mario
+path.rds = getwd() %>% paste0("/") #sync to git
 
 path.phys = "Data/physio/" %>% paste0(path, .)
 

@@ -143,8 +143,8 @@ ratings = ratings %>% filter(subject %in% exclusions.rating == F)
 ratings.gen = ratings %>% filter(phase=="Gen") %>% left_join(questionnaires, by="subject") %>% 
   mutate(SPAI.z = scale(SPAI)[,1], STAI.z = scale(STAI)[,1])
 
-# ratings.first.gen = ratings %>% filter(block==2) %>% left_join(questionnaires, by="subject") %>% 
-#   mutate(SPAI.z = scale(SPAI)[,1], STAI.z = scale(STAI)[,1])
+ratings.first.gen = ratings %>% filter(block==2) %>% left_join(questionnaires, by="subject") %>%
+  mutate(SPAI.z = scale(SPAI)[,1], STAI.z = scale(STAI)[,1])
 
 #plot across all trials
 ratings.ga.trials = ratings %>% group_by(trial, threat, threat_num, threat_both, subject) %>% summarise(rating.se=se(rating, na.rm=T), rating=mean(rating, na.rm=T)) %>% 
