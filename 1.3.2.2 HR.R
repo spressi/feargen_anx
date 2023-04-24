@@ -4,6 +4,7 @@ if(!require(tidyverse)) install.packages("tidyverse"); library(tidyverse)
 exclusions.hr = c(
   40:43, #FFP2 mask (interacts with breathing more heavily)
   54, #temporary exclusion until workaround for missing ratings :D
+  76, #too many ectopic beats
   95 #too many ectopic beats
 ) %>% c(exclusions) %>% unique() %>% sort()
 
