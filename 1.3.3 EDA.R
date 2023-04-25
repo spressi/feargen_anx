@@ -690,7 +690,7 @@ for (i in 1:5) { #CS+ vs. rest
     t.test(ln_cr ~ threat, ., paired=T) %>% apa::t_apa(es_ci=T)
 }
 
-for (i in 1:6) { #CS+ vs. rest
+for (i in 1:6) { #GS4 vs. rest
   levels = c(i, 5)
   if (min(levels) == max(levels)) next
   cat(paste0("\n\nComparing levels: ", paste(levels, collapse=" vs. "), "\n"))
