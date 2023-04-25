@@ -564,7 +564,7 @@ for (s in seq(subjects)) {
           geom_vline(xintercept = crMinWindow, linetype="dashed", color="blue") + 
           geom_vline(xintercept=(itiEnd-shockTime)/1000) + #borders of ITI
           geom_path() + scale_color_viridis_d() +
-          ggtitle(filename) + myGgTheme + theme(legend.position = "none", plot.title = element_text(hjust = 0.5))} %>% 
+          ggtitle(subject %>% toCode()) + myGgTheme + theme(legend.position = "none", plot.title = element_text(hjust = 0.5))} %>% 
       #print()
       ggsave(paste0(path.cs, subject %>% toCode(), ".png"), plot=., device="png", width=1920/300, height=1080/300, dpi=300)
   }
