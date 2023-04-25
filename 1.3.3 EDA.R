@@ -1,5 +1,5 @@
 if(!require(tidyverse)) install.packages("tidyverse"); library(tidyverse)
-source("0 General.R" %>% paste0("C:/Users/mar84qk/Dropbox/Arbeit/C10 - Gamer Fear/3 Diagnostic Generalization/3 Analysis/main Anx/", .))
+#source("0 General.R" %>% paste0("C:/Users/mar84qk/Dropbox/Arbeit/C10 - Gamer Fear/3 Diagnostic Generalization/3 Analysis/main Anx/", .))
 
 requirePackage("signal", load=F)
 
@@ -161,7 +161,7 @@ for (file in files.phys.included) {
   
   filename = file %>% pathToCode()
   code = filename %>% codeToNum()
-  eda = read.phys(paste0(path.phys, file)) %>% select(-2) %>% 
+  eda = read.phys(paste0(path.phys, file)) %>% #select(-2) %>% 
     mutate(Trigger = Trigger %>% recode.triggers())
   
   if (exclusions.phys.trials[[filename]] %>% is.null() == F) {
@@ -390,6 +390,8 @@ for (file in files.phys.included) {
         mutate(trial = t, sample = sample - min(sample) + 1, time = time - min(time)) #unify starting time to allow overlap
     }
     
+    path.ucs = paste0(path.rds, "plots eda/UCS/")
+    if (dir.exists(path.ucs)==F) dir.create(path.ucs, recursive=T)
     unified$EDA %>% bind_rows() %>% 
       mutate(trial = as.factor(trial)) %>% #filter(time > shockEnd/1000) %>% 
     {ggplot(., aes(x=time, y=EDA, color=trial)) + 
@@ -400,7 +402,7 @@ for (file in files.phys.included) {
         geom_path() + scale_color_viridis_d() +
         ggtitle(filename) + myGgTheme + theme(legend.position = "none", plot.title = element_text(hjust = 0.5))} %>% 
       #print()
-      ggsave(paste0(path.rds, "plots eda/UCS/", filename, ".png"), plot=., device="png", width=1920/300, height=1080/300, dpi=300)
+      ggsave(paste0(path.ucs, filename, ".png"), plot=., device="png", width=1920/300, height=1080/300, dpi=300)
   }
   
   if (checkPlots && !checkPlotsTrial) invisible(readline(prompt="Press [enter] to continue"))
@@ -413,9 +415,9 @@ eda.ucr = eda.ucr %>% mutate(subject = subject %>% gsub("vp", "", ., fixed=T) %>
                              include = ucr > ucrMeanAmp & valid > ucrMeanValid, 
                              ln_ucr = log(ucr + 1)) %>% 
   #mutate(include = ifelse(subject %in% c(4, 28), F, include)) %>% #discard manually according to UCS plot
-  filter(subject %in% exclusions.eda.num == FALSE) #discard a priori exclusions (i.e., UCS not painful)
+  filter(subject %in% exclusions.eda.num == FALSE) #discard a priori exclusions
 sum(eda.ucr$include == F) %>% paste0(" subjects excluded (", round(100 - mean(eda.ucr$include)*100, digits = 2), "%)")
-eda.ucr %>% filter(include==FALSE)
+#eda.ucr %>% filter(include==FALSE) %>% arrange(desc(valid))
 
 with(eda.ucr, hist(valid, breaks=seq(0, 1, length.out=20+1), main="Valid URs")); abline(v=ucrMeanValid, col="red", lwd=3, lty=2)
 with(eda.ucr, hist(ucr, breaks=seq(0, ceiling(max(ucr)), by=ucrMeanAmp), main="Size of URs")); abline(v=ucrMeanAmp, col="red", lwd=3, lty=2)
@@ -542,9 +544,6 @@ for (s in seq(subjects)) {
   edas.df.list[[subject]] = eda.vp
   
   if (crPlots) {
-    path = paste0(path.rds, "plots eda/CS/")
-    dir.create(path, showWarnings=F)
-    
     unified = eda.vp %>% mutate(EDA = sample.start %>% lapply(function(start) 
       eda %>% filter(sample >= start,
                      sample <= start + max(itiEnd)/1000*ifelse(downsampling, sample.rate.new, sample.rate)) %>% select(-Trigger))
@@ -555,6 +554,8 @@ for (s in seq(subjects)) {
         mutate(trial = t, threat = eda.vp$threat[t], sample = sample - min(sample) + 1, time = time - min(time)) #unify starting time to allow overlap
     }
     
+    path.cs = paste0(path.rds, "plots eda/CS/")
+    if (dir.exists(path.cs)==F) dir.create(path.cs, recursive=T)
     unified$EDA %>% bind_rows() %>% 
       mutate(trial = as.factor(trial)) %>% #filter(time > shockEnd/1000) %>% 
       {ggplot(., aes(x=time, y=EDA, color=trial)) + facet_wrap(vars(threat)) + 
@@ -565,7 +566,7 @@ for (s in seq(subjects)) {
           geom_path() + scale_color_viridis_d() +
           ggtitle(filename) + myGgTheme + theme(legend.position = "none", plot.title = element_text(hjust = 0.5))} %>% 
       #print()
-      ggsave(paste0(path.rds, "plots eda/CS/", filename, ".png"), plot=., device="png", width=1920/300, height=1080/300, dpi=300)
+      ggsave(paste0(path.cs, subject %>% toCode(), ".png"), plot=., device="png", width=1920/300, height=1080/300, dpi=300)
   }
   
   if (checkPlots && !checkPlotsTrial) invisible(readline(prompt="Press [enter] to continue"))
@@ -629,10 +630,22 @@ eda.df.gen %>% merge(questionnaires, ., by="subject") %>%
   ez::ezANOVA(dv=.(ln_cr), wid=.(subject), 
               within=.(threat, diagnostic), 
               #between=.(pairs),
-              #between=.(SPAI), observed=SPAI,
-              between=.(STAI), observed=STAI,
+              between=.(SPAI), observed=SPAI,
+              #between=.(STAI), observed=STAI,
               detailed=T, type=2) %>% apa::anova_apa(force_sph_corr=T)
   #schoRsch::anova_out(print = TRUE, sph.cor = "GG", mau.p = 0.05, etasq = "partial", dfsep = ", ")
+
+#SPAI main effect
+eda.df.gen %>% group_by(subject) %>% summarise(ln_cr.se = se(ln_cr, na.rm=T), ln_cr = mean(ln_cr, na.rm=T)) %>% merge(questionnaires, by="subject") %>% 
+  with(cor.test(ln_cr, SPAI)) %>% correlation_out()
+eda.df.gen %>% group_by(subject) %>% summarise(ln_cr.se = se(ln_cr, na.rm=T), ln_cr = mean(ln_cr, na.rm=T)) %>% merge(questionnaires, by="subject") %>% 
+  ggplot(aes(x=SPAI, y=ln_cr, color=SPAI, fill=SPAI)) +
+  geom_errorbar(aes(ymin=ln_cr-ln_cr.se*1.96, ymax=ln_cr+ln_cr.se*1.96), width=spai.width) +
+  stat_smooth(method="lm", color = "black") +
+  #geom_point(size=4, shape=21, color="black") +
+  geom_point(size=4) + 
+  ylab("ln(1 + SCR)") +
+  scale_color_viridis_c() + myGgTheme + theme(legend.position = "none")
 
 #STAI main effect
 eda.df.gen %>% group_by(subject) %>% summarise(ln_cr.se = se(ln_cr, na.rm=T), ln_cr = mean(ln_cr, na.rm=T)) %>% merge(questionnaires, by="subject") %>% 
@@ -662,6 +675,29 @@ eda.df.gen %>% group_by(threat) %>% summarise(ln_cr.se = se(ln_cr, na.rm=T), ln_
   scale_x_discrete(labels=c("CS-", paste0("GS", 1:4), "CS+")) +
   ylab("LN(1 + SCR)") + xlab("Threat") + labs(color="Threat", fill="Threat") + myGgTheme +
   theme(legend.position = "none")
+
+for (i in 2:6) { #CS- vs. rest
+  levels = c(1, i)
+  cat(paste0("\n\nComparing levels: ", paste(levels, collapse=" vs. "), "\n"))
+  eda.df.gen.subj %>% filter(threat %in% levels) %>%
+    t.test(ln_cr ~ threat, ., paired=T) %>% apa::t_apa(es_ci=T)
+}
+
+for (i in 1:5) { #CS+ vs. rest
+  levels = c(i, 6)
+  cat(paste0("\n\nComparing levels: ", paste(levels, collapse=" vs. "), "\n"))
+  eda.df.gen.subj %>% filter(threat %in% levels) %>%
+    t.test(ln_cr ~ threat, ., paired=T) %>% apa::t_apa(es_ci=T)
+}
+
+for (i in 1:6) { #CS+ vs. rest
+  levels = c(i, 5)
+  if (min(levels) == max(levels)) next
+  cat(paste0("\n\nComparing levels: ", paste(levels, collapse=" vs. "), "\n"))
+  eda.df.gen.subj %>% filter(threat %in% levels) %>%
+    t.test(ln_cr ~ threat, ., paired=T) %>% apa::t_apa(es_ci=T)
+}
+
 
 # eda.df.gen %>% group_by(threat, diagnostic) %>% summarise(ln_cr.se = se(ln_cr, na.rm=T), ln_cr = mean(ln_cr, na.rm=T)) %>%
 #   ggplot(aes(x=threat, y=ln_cr, color=diagnostic, group=diagnostic)) +
