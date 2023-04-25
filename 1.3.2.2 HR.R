@@ -262,7 +262,7 @@ heart.simple.gen.lvl = heart.simple.gen %>% group_by(subject, SPAI, STAI) %>% su
 heart.simple.gen.lvl %>% with(cor.test(HRchange.m, SPAI, alternative="less")) %>% correlation_out()
 heart.simple.gen.lvl %>% with(cor.test(HRchange.m, SPAI)) %>% correlation_out()
 print(heart.spai.plot <- heart.simple.gen.lvl %>% ggplot(aes(x=SPAI, y=HRchange.m, color=SPAI, fill=SPAI)) +
-        geom_errorbar(aes(ymin=HRchange.m-HRchange.se*1.96, ymax=HRchange.m+HRchange.se*1.96), width=.04) +
+        geom_errorbar(aes(ymin=HRchange.m-HRchange.se*1.96, ymax=HRchange.m+HRchange.se*1.96), width=spai.width) +
         stat_smooth(method="lm", color = "black") +
         #geom_point(size=4, shape=21, color="black") +
         geom_point(size=4) + 

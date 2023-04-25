@@ -214,6 +214,7 @@ dodge = position_dodge(width=dodge.width)
 dodge_half = position_dodge(width=dodge.width/2)
 
 dodge_stai = position_dodge(width=1)
+spai.width = .1
 
 #ggplot general theme
 #theme_set( #don't use theme_set because it has to be executed every session but myGgTheme can be saved in global environment
@@ -261,3 +262,5 @@ questionnaires %>%
 
 #questionnaires %>% filter(problem==T)
 #exclusions = exclusions %>% c(questionnaires %>% filter(problem==T) %>% .$subject) #rather don't exclude (deviation from preregistration)
+
+#spai.width = questionnaires %>% select(SPAI, STAI) %>% summarise(across(.fns = function(x) {max(x) - min(x)})) %>% transmute(width = SPAI/STAI) %>% pull(width) #close to .1
