@@ -12,7 +12,7 @@ requirePackage("lmerTest")
 data.wide = full_join(questionnaires, ratings.wide, by="subject") %>% 
   full_join(eyes.wide, by=c("subject", "SPAI")) %>% 
   full_join(heart.wide, by="subject") #%>% 
-  #full_join(eda.wide, by="subject")
+  full_join(eda.wide, by="subject")
 
 # data.wide.first.half = full_join(questionnaires, ratings.first.wide, by="subject") %>% 
 #   full_join(eyes.wide, by="subject") %>% 
