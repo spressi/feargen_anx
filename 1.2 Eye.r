@@ -28,6 +28,10 @@ requirePackage("png") #for reading png
   unifyRois = T
   binResolution = 500 #resolution of temporal bins in ms
   bins = seq(0, trialEnd, binResolution) #bins for temporal dynamic analysis (in ms)
+  
+  wsx <- 1920 ; wsy <- 1080 #screen resolution (24" ASUS VG248QE)
+  pixsize <- 0.27675  # Pixel size in mm
+  distance <- 560 # Distance Camera - Eye 560 mm (chin rest with remote tracking)
 }
 
 { # Functions ---------------------------------------------------------------
@@ -258,6 +262,8 @@ requirePackage("png") #for reading png
   validateBaselines = function(fixs, mess, exclusions, 
                                maxDeviation_rel, maxSpread,
                                saveBaselinePlots=FALSE, postfix="") {
+    if (saveBaselinePlots) dir.create(paste0(path.rds, "BL plots/"), showWarnings=F)
+    
     vpn = fixs$subject %>% unique() %>% sort() %>% as.character() #all subjects in fixations
     vpn = vpn[!(vpn %in% exclusions)] #minus a priori exclusions
     vpn.n = length(vpn)
@@ -458,6 +464,10 @@ requirePackage("png") #for reading png
       
       #fixations
       fixations.trial = fixs %>% filter(trial==i.total)
+      if (fixations.trial %>% nrow() == 0) {
+        eye.vp[i, 1] = i.total; eye.vp[i, -1] = NA
+        next
+      }
       
       #messages
       condition = fixations.trial %>% transmute(condition = pic %>% sub(".png", "", ., fixed=T)) %>% .$condition %>% head(1)
@@ -467,13 +477,17 @@ requirePackage("png") #for reading png
       roi.non = rois.nondiag[[condition %>% substring(1, 1) %>% as.integer()]]
       
       fixations.trial = fixations.trial %>% 
-        mutate(x = x - bl.corr.x + screen.width/2, 
+        mutate(x.cent = x - bl.corr.x,
+               y.cent = y - bl.corr.y,
+               dist = sqrt(x.cent^2 + y.cent^2), #distance from center
+               x = x - bl.corr.x + screen.width/2, 
                y = y - bl.corr.y + screen.height/2,
                x.roi = {x - screen.width/2 + 1 + dim(roi)[2]/2} %>% round(), #old coordinate minus half screen + 1 => middle of screen & roi = 1. this + half roi => 1 = most left column of roi
                y.roi = {screen.height - y - screen.height/2 + 1 + dim(roi)[1]/2} %>% round(), #same as with x but reverse y-direction first (currently up = bigger but down = bigger needed for matrix indexing)
                #inRoi = ifelse(x.roi > 0 & y.roi > 0 & x.roi <= dim(roi)[2] & y.roi <= dim(roi)[1], roi[y.roi, x.roi], FALSE), #if coordinates within bounds of roi matrix, look up in matrix, else FALSE #doesn't work because whole vector is evaluated and throws error even though result FALSE shall be used
                start = start - onset, #start of exposition = time_0
-               end = end - onset) #start of exposition = time_0
+               end = end - onset, #start of exposition = time_0
+        )
       
       #roi analysis
       fixations.trial = fixations.trial %>% mutate(
@@ -485,15 +499,23 @@ requirePackage("png") #for reading png
       fixations.trial = fixations.trial %>% mutate(roi = case_when(
         inRoi ~ "diagnostic", inRoi.non ~ "non-diagnostic", TRUE ~ "no ROI") %>% as.factor())
       
-      fixations.trial.analysis = fixations.trial %>% filter(start > 0, end > 0, start < ratingStart) %>% 
+      fixations.trial.analysis = fixations.trial %>% #filter(end > 0, start < ratingStart) %>% #replaced by start = ifelse...
         mutate(start = ifelse(start < 0, 0, start),
                end = ifelse(end > ratingStart, ratingStart, end),
-               dur = end - start)
+               dur = end - start,
+               x.st.mm = lag(x.cent) * pixsize, y.st.mm = lag(y.cent) * pixsize, #previous fixation = saccade start
+               x.en.mm = x.cent * pixsize, y.en.mm = y.cent * pixsize, #current fixation = saccade end
+               x.st.mm = ifelse(x.st.mm %>% is.na(), 0, x.st.mm), x.en.mm = ifelse(x.en.mm %>% is.na(), 0, x.en.mm), #set first fixation to fixation cross
+               y.st.mm = ifelse(y.st.mm %>% is.na(), 0, y.st.mm), y.en.mm = ifelse(y.en.mm %>% is.na(), 0, y.en.mm), #set first fixation to fixation cross
+               distfix.st = distfix(x.st.mm, y.st.mm, distance),
+               distfix.en = distfix(x.en.mm, y.en.mm, distance)
+        ) %>% filter(dur > 0) %>% 
+        rowwise() %>% mutate(angle = angle(c(x.st.mm, y.st.mm, distfix.st), c(x.en.mm, y.en.mm, distfix.en)))
       
-      fixations.trial.analysis.bins = fixations.trial %>% filter(start > 0, end > 0, end > min(bins), start < max(bins)) %>% 
+      fixations.trial.analysis.bins = fixations.trial %>% #filter(end > min(bins), start < max(bins)) %>% #replaced by start = ifelse...
         mutate(start = ifelse(start < min(bins), min(bins), start),
                end = ifelse(end > max(bins), max(bins), end),
-               dur = end - start)
+               dur = end - start) %>% filter(dur > 0)
       
       #output variables
       dwell = with(fixations.trial.analysis, sum(dur[inRoi] / sum(dur)))
@@ -504,7 +526,7 @@ requirePackage("png") #for reading png
       fixN = fixations.trial.analysis %>% nrow()
       mFixTime = fixations.trial.analysis %>% pull(dur) %>% mean()
       roiSwitch = with(fixations.trial.analysis, roi[roi != "no ROI"]) %>% as.numeric() %>% diff() %>% {. != 0} %>% sum()
-      scanPath = 0 #TODO
+      scanPath = with(fixations.trial.analysis, sum(angle, na.rm=T))
       
       dwell.bins = c()
       dwell.non.bins = c()
