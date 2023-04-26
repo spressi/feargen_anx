@@ -722,8 +722,11 @@ eye.gen = eye %>% filter(phase == "Gen") %>% group_by(subject) %>%
             ms.m = mean(ms, na.rm=T), ms.se = se(ms, na.rm=T),
             ms.non.m = mean(ms.non, na.rm=T), ms.non.se = se(ms.non, na.rm=T),
             diagnosticFirst.m = mean(diagnosticFirst, na.rm=T), diagnosticFirst.se = se(diagnosticFirst, na.rm=T),
+            fixN.m = mean(fixN, na.rm=T), fixN.se = se(fixN, na.rm=T),
+            mFixTime.m = mean(mFixTime, na.rm=T), mFixTime.se = se(mFixTime, na.rm=T),
             roiSwitch.m = mean(roiSwitch, na.rm=T), roiSwitch.se = se(roiSwitch, na.rm=T),
-            SPAI = mean(SPAI)) %>% 
+            scanPath.m = mean(scanPath, na.rm=T), scanPath.se = se(scanPath, na.rm=T),
+            SPAI = mean(SPAI), STAI = mean(STAI)) %>% 
   select("subject", contains(".m"), everything())
 
 eye.gen.diagnostic = eye %>% filter(phase == "Gen") %>% group_by(subject, diagnostic) %>% 
@@ -733,7 +736,11 @@ eye.gen.diagnostic = eye %>% filter(phase == "Gen") %>% group_by(subject, diagno
             ms.m = mean(ms, na.rm=T), ms.se = se(ms, na.rm=T),
             ms.non.m = mean(ms.non, na.rm=T), ms.non.se = se(ms.non, na.rm=T),
             diagnosticFirst.m = mean(diagnosticFirst, na.rm=T), diagnosticFirst.se = se(diagnosticFirst, na.rm=T),
-            roiSwitch.m = mean(roiSwitch, na.rm=T), roiSwitch.se = se(roiSwitch, na.rm=T)) %>% 
+            fixN.m = mean(fixN, na.rm=T), fixN.se = se(fixN, na.rm=T),
+            mFixTime.m = mean(mFixTime, na.rm=T), mFixTime.se = se(mFixTime, na.rm=T),
+            roiSwitch.m = mean(roiSwitch, na.rm=T), roiSwitch.se = se(roiSwitch, na.rm=T),
+            scanPath.m = mean(scanPath, na.rm=T), scanPath.se = se(scanPath, na.rm=T),
+            SPAI = mean(SPAI), STAI = mean(STAI)) %>% 
   select("subject", "diagnostic", contains(".m"), everything())
 
 
@@ -855,26 +862,26 @@ eye.diagnosticity.spai %>% ggplot(aes(x=SPAI, y=relDwell, color=Diagnosticity, f
   geom_point(size=4) + 
   ylab("Relative Dwell Time (%)") + myGgTheme
 
-#SPAI x Diagnosticity in German
-eye.diagnosticity.spai = eye.diagnosticity %>% group_by(subject, Diagnosticity, SPAI) %>% 
-  summarise(relDwell.se = se(relDwell, na.rm=T), relDwell = mean(relDwell, na.rm=T))
-eye.diagnosticity.spai %>% group_by(Diagnosticity) %>% summarise(cor.test(relDwell, SPAI, alternative="two.sided") %>% apa::cor_apa(r_ci=T, print=F))
-eye.diagnosticity.spai <- eye.diagnosticity.spai %>%
-  mutate(Diagnosticity =
-                    case_when(
-                      Diagnosticity == "Diagnostic" ~ "Diagnostisch",
-                      Diagnosticity == "Non-Diagnostic" ~ "Nicht-Diagnostisch"
-                    ))%>%
-  rename(Diagnostizität = Diagnosticity)
-
-eye.diagnosticity.spai %>% ggplot(aes(x=SPAI, y=relDwell, color=Diagnostizität, fill=Diagnostizität, group=Diagnostizität)) +
-  facet_wrap(vars(Diagnostizität)) +
-  #facet_wrap(vars(ROI), labeller=labeller(ROI=c("Eyes" = "Augen", "Mouth/Nose" = "Mund/Nase"))) +
-  scale_color_viridis_d() + scale_fill_viridis_d() +
-  geom_errorbar(aes(ymin=relDwell-relDwell.se*1.96, ymax=relDwell+relDwell.se*1.96)) +
-  stat_smooth(method="lm", color = "black") +
-  geom_point(size=4) + 
-  ylab("Relative Verweildauer (%)") + myGgTheme
+# #SPAI x Diagnosticity in German
+# eye.diagnosticity.spai = eye.diagnosticity %>% group_by(subject, Diagnosticity, SPAI) %>% 
+#   summarise(relDwell.se = se(relDwell, na.rm=T), relDwell = mean(relDwell, na.rm=T))
+# eye.diagnosticity.spai %>% group_by(Diagnosticity) %>% summarise(cor.test(relDwell, SPAI, alternative="two.sided") %>% apa::cor_apa(r_ci=T, print=F))
+# eye.diagnosticity.spai <- eye.diagnosticity.spai %>%
+#   mutate(Diagnosticity =
+#                     case_when(
+#                       Diagnosticity == "Diagnostic" ~ "Diagnostisch",
+#                       Diagnosticity == "Non-Diagnostic" ~ "Nicht-Diagnostisch"
+#                     ))%>%
+#   rename(Diagnostizität = Diagnosticity)
+# 
+# eye.diagnosticity.spai %>% ggplot(aes(x=SPAI, y=relDwell, color=Diagnostizität, fill=Diagnostizität, group=Diagnostizität)) +
+#   facet_wrap(vars(Diagnostizität)) +
+#   #facet_wrap(vars(ROI), labeller=labeller(ROI=c("Eyes" = "Augen", "Mouth/Nose" = "Mund/Nase"))) +
+#   scale_color_viridis_d() + scale_fill_viridis_d() +
+#   geom_errorbar(aes(ymin=relDwell-relDwell.se*1.96, ymax=relDwell+relDwell.se*1.96)) +
+#   stat_smooth(method="lm", color = "black") +
+#   geom_point(size=4) + 
+#   ylab("Relative Verweildauer (%)") + myGgTheme
 
 #STAI x Diagnosticity
 eye.diagnosticity.stai = eye.diagnosticity %>% group_by(subject, Diagnosticity, STAI) %>% 
