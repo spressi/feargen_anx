@@ -705,6 +705,10 @@ eye = eye %>% separate(condition, c("pair", "morph"), convert=T) %>%
          pair = as.factor(pair),
          dwell.rois = dwell / (dwell + dwell.non)) %>% select(1:5, dwell.rois, everything()) %>% arrange(subject, trial)
 
+#eye %>% filter(ms == 0 | ms.non == 0) %>% select(subject:morph, diagnostic, ms, ms.non) %>% View("Latency == 0")
+#eye %>% mutate(instant = ms == 0 | ms.non == 0) %>% summarise(instant = mean(instant))
+#eye %>% mutate(instant = ms == 0 | ms.non == 0) %>% group_by(subject) %>% summarise(instant = mean(instant)) %>% summary()
+
 #exclusion based on diagnostic dwell
 print(eye.invalid.dwell <- eye %>% group_by(subject) %>% summarise(nBad = sum(dwell == 0), nTotal = n(), valid = 1 - nBad/nTotal) %>% arrange(desc(nBad)) %>% 
   filter(valid < diagnosticDwell) %>% .$subject)
