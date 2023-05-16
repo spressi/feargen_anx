@@ -238,8 +238,8 @@ ez::ezANOVA(data=ratings.subject.gen.diagnostic,
             dv=.(rating.m), wid=.(subject), 
             within=.(threat, diagnostic), 
             #between=.(pairs),
-            #between=.(SPAI.z), observed=SPAI.z,
-            between=.(STAI.z), observed=STAI.z,
+            between=.(SPAI.z), observed=SPAI.z,
+            #between=.(STAI.z), observed=STAI.z,
             detailed=T, type=2) %>% apa::anova_apa(force_sph_corr=T)
 
 # ANOVA Generalization Phase per Block 
@@ -371,16 +371,16 @@ gradients = merge(gradients.simple, gradients.diagnostic, by="subject")
 # gradients.simple.first.half = data.frame(subject=character(), lds=numeric(), diff=numeric(), level=numeric(), stringsAsFactors=F)
 # for (s in ratings.subject.first.gen$subject %>% unique()) {
 #   ratings.temp = ratings.subject.first.gen %>% filter(subject==s)
-#   
+# 
 #   gradient = gradient.analysis(ratings.temp$rating.m)
 #   gradients.simple.first.half = bind_rows(gradients.simple.first.half, data.frame(subject=s %>% as.character(), lds=gradient["lds"], diff=gradient["diff"], level=gradient["level"], row.names = NULL, stringsAsFactors=F))
-#   
+# 
 #   if (individualPlots) {
 #     gradient = gradient %>% signif(3)
 #     print(ratings.temp %>% ggplot(aes(x=threat_num, y=rating.m, color=threat, group=NA)) + #generalization line
 #             geom_path(data=ratings.temp %>% filter(threat_num %in% c(1, 6)), aes(group=NA), color = "black", size=1.5) +
 #             geom_errorbar(aes(ymin=rating.m-rating.se*1.96, ymax=rating.m+rating.se*1.96)) +
-#             geom_line() + geom_point() + 
+#             geom_line() + geom_point() +
 #             scale_color_manual(values=colors) +
 #             ggtitle(paste0(s, ": lds = ", gradient[1], ", diff = ", gradient[2], ", level = ", gradient[3])) + myGgTheme)
 #     invisible(readline(prompt="Press [enter] to continue")) #TODO save to file instead
@@ -392,16 +392,16 @@ gradients = merge(gradients.simple, gradients.diagnostic, by="subject")
 # gradients.diagnostic.first.half = data.frame()
 # for (s in ratings.subject.first.gen.diagnostic$subject %>% unique()) {
 #   ratings.temp = ratings.subject.first.gen.diagnostic %>% filter(subject==s)
-#   
+# 
 #   gradient.eyes = "Eyes" %>% {filter(ratings.temp, diagnostic==.)} %>% .$rating.m %>% gradient.analysis()
 #   gradient.m_n = "Mouth/Nose" %>% {filter(ratings.temp, diagnostic==.)} %>% .$rating.m %>% gradient.analysis()
 #   gradients.diagnostic.first.half = rbind(gradients.diagnostic.first.half, c(s, gradient.eyes, gradient.m_n))
-#   
+# 
 #   if (individualPlots) {
-#     print(ratings.temp %>% ggplot(aes(x=threat, y=rating.m, color=diagnostic, shape=diagnostic, group=diagnostic)) + 
+#     print(ratings.temp %>% ggplot(aes(x=threat, y=rating.m, color=diagnostic, shape=diagnostic, group=diagnostic)) +
 #             #geom_path(data=ratings.ga.m.diagnostic %>% filter(threat_num %in% c(1, 6)), aes(group=NA), color = "black", size=1.5) + #generalization line
-#             geom_errorbar(aes(ymin=rating.m-rating.se*1.96, ymax=rating.m+rating.se*1.96), position=dodge, width=dodge.width) + 
-#             geom_line(position=dodge) + geom_point(position=dodge) + 
+#             geom_errorbar(aes(ymin=rating.m-rating.se*1.96, ymax=rating.m+rating.se*1.96), position=dodge, width=dodge.width) +
+#             geom_line(position=dodge) + geom_point(position=dodge) +
 #             ggtitle(s) + myGgTheme)
 #     invisible(readline(prompt="Press [enter] to continue")) #TODO save to file instead
 #   }
