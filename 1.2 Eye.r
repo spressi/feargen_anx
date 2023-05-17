@@ -499,7 +499,8 @@ requirePackage("png") #for reading png
       fixations.trial = fixations.trial %>% mutate(roi = case_when(
         inRoi ~ "diagnostic", inRoi.non ~ "non-diagnostic", TRUE ~ "no ROI") %>% as.factor())
       
-      fixations.trial.analysis = fixations.trial %>% #filter(end > 0, start < ratingStart) %>% #replaced by start = ifelse...
+      fixations.trial.analysis = fixations.trial %>% filter(end > 0, start < ratingStart) %>% 
+        filter(start > 0) %>% #filter out fixations starting before stimulus onset (even if they extend into a stimulus ROI)
         mutate(start = ifelse(start < 0, 0, start),
                end = ifelse(end > ratingStart, ratingStart, end),
                dur = end - start,
@@ -512,7 +513,8 @@ requirePackage("png") #for reading png
         ) %>% filter(dur > 0) %>% 
         rowwise() %>% mutate(angle = angle(c(x.st.mm, y.st.mm, distfix.st), c(x.en.mm, y.en.mm, distfix.en)))
       
-      fixations.trial.analysis.bins = fixations.trial %>% #filter(end > min(bins), start < max(bins)) %>% #replaced by start = ifelse...
+      fixations.trial.analysis.bins = fixations.trial %>% filter(end > min(bins), start < max(bins)) %>% 
+        filter(start > 0) %>% #filter out fixations starting before stimulus onset (even if they extend into a stimulus ROI)
         mutate(start = ifelse(start < min(bins), min(bins), start),
                end = ifelse(end > max(bins), max(bins), end),
                dur = end - start) %>% filter(dur > 0)
