@@ -183,7 +183,7 @@ heart.ga.gen.time.spai = heart %>% filter(phase == "Gen") %>%
   mutate(time = time %>% as.character() %>% as.numeric()) %>% 
   bind_rows(data.frame(threat=unique(heart$threat), time=0, spai.split = "HSA", HRchange=0, HRchange.se=0)) %>%
   bind_rows(data.frame(threat=unique(heart$threat), time=0, spai.split = "LSA", HRchange=0, HRchange.se=0))#add origin
-print(heart.trialtime.plot <- heart.ga.gen.time.spai %>% ggplot(aes(x=time, y=HRchange, color=threat, group=threat, shape=threat)) + 
+print(heart.trialtime.spai.plot <- heart.ga.gen.time.spai %>% ggplot(aes(x=time, y=HRchange, color=threat, group=threat, shape=threat)) + 
         geom_hline(yintercept = 0, linetype="dashed") +
         geom_ribbon(aes(ymin=HRchange-HRchange.se*1.96, ymax=HRchange+HRchange.se*1.96, fill=threat), color=NA, alpha=.1) +
         #geom_errorbar(aes(ymin=HRchange-HRchange.se*1.96, ymax=HRchange+HRchange.se*1.96)) +
