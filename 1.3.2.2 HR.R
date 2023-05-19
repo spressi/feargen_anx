@@ -172,6 +172,26 @@ print(heart.trialtime.plot <- heart.ga.gen.time %>% ggplot(aes(x=time, y=HRchang
         scale_color_manual(values=colors, labels=c("CS-", paste0("GS", 1:4), "CS+")) + scale_shape_discrete(labels=c("CS-", paste0("GS", 1:4), "CS+")) + scale_fill_manual(values=colors, labels=c("CS-", paste0("GS", 1:4), "CS+")) + 
         ylab("Heart Rate Change (bpm)") + xlab("Trial Time (sec)") + labs(color="Threat", shape="Threat", fill="Threat") + myGgTheme)
 
+# Split in HSA/LSA 
+heart.ga.gen.time.spai = heart %>% filter(phase == "Gen") %>% 
+  mutate(spai.split = case_when(
+    SPAI.z >= 0 ~ "HSA",
+    SPAI.z < 0 ~ "LSA"
+  ))%>%  
+  group_by(threat, time, spai.split) %>% 
+  summarise(HRchange.se = se(HRchange, na.rm=T), HRchange = mean(HRchange, na.rm=T)) %>% 
+  mutate(time = time %>% as.character() %>% as.numeric()) %>% 
+  bind_rows(data.frame(threat=unique(heart$threat), time=0, spai.split = "HSA", HRchange=0, HRchange.se=0)) %>%
+  bind_rows(data.frame(threat=unique(heart$threat), time=0, spai.split = "LSA", HRchange=0, HRchange.se=0))#add origin
+print(heart.trialtime.plot <- heart.ga.gen.time.spai %>% ggplot(aes(x=time, y=HRchange, color=threat, group=threat, shape=threat)) + 
+        geom_hline(yintercept = 0, linetype="dashed") +
+        geom_ribbon(aes(ymin=HRchange-HRchange.se*1.96, ymax=HRchange+HRchange.se*1.96, fill=threat), color=NA, alpha=.1) +
+        #geom_errorbar(aes(ymin=HRchange-HRchange.se*1.96, ymax=HRchange+HRchange.se*1.96)) +
+        geom_point(size=3) + geom_line() + 
+        facet_wrap(vars(spai.split)) +
+        scale_color_manual(values=colors, labels=c("CS-", paste0("GS", 1:4), "CS+")) + scale_shape_discrete(labels=c("CS-", paste0("GS", 1:4), "CS+")) + scale_fill_manual(values=colors, labels=c("CS-", paste0("GS", 1:4), "CS+")) + 
+        ylab("Heart Rate Change (bpm)") + xlab("Trial Time (sec)") + labs(color="Threat", shape="Threat", fill="Threat") + myGgTheme)
+
 
 
 #this is an oversimplification now (cp. exploration)
