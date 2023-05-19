@@ -500,7 +500,14 @@ requirePackage("png") #for reading png
         inRoi ~ "diagnostic", inRoi.non ~ "non-diagnostic", TRUE ~ "no ROI") %>% as.factor())
       
       fixations.trial.analysis = fixations.trial %>% filter(end > 0, start < ratingStart) %>% 
-        filter(start > 0) %>% #filter out fixations starting before stimulus onset (even if they extend into a stimulus ROI)
+        filter(start > 0) #filter out fixations starting before stimulus onset (even if they extend into a stimulus ROI)
+      
+      if (fixations.trial.analysis %>% nrow() == 0) {
+        eye.vp[i, 1] = i.total; eye.vp[i, -1] = NA
+        next
+      }
+      
+      fixations.trial.analysis = fixations.trial.analysis %>% 
         mutate(start = ifelse(start < 0, 0, start),
                end = ifelse(end > ratingStart, ratingStart, end),
                dur = end - start,
