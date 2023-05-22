@@ -1471,7 +1471,7 @@ eye.diagnosticity.bins %>% filter(bin <= ratingStart/1000) %>%
 # Wide format for correlations --------------------------------------------
 eyes.wide = eye.gen.diagnostic %>% select(-contains(".se")) %>% 
   gather(measure, value, -c("subject", "diagnostic")) %>% unite(temp, measure, diagnostic) %>% spread(temp, value)
-measures = c("dwell", "dwell.non", "dwell.rois", "ms.diag", "ms.nondiag", "diagFirst", "roiSwitch")
+measures = c("dwell", "dwell.non", "dwell.rois", "ms.diag", "ms.nondiag", "diagFirst", "fixN", "mFixTime", "roiSwitch", "scanPath")
 names(eyes.wide) = c("subject", paste0("Gen_", do.call(paste0, expand.grid(c("eyes_", "mn_"), measures %>% sort()))))
 # names(eyes.wide)[-1] = names(eyes.wide)[-1] %>% {ifelse(grepl("Eyes", ., fixed=T), "eyes", "mn")} %>% 
 #   paste("Gen", ., names(eyes.wide)[-1] %>% gsub("_.*", "", .) %>% gsub(".m", "", ., fixed=T), sep="_")
