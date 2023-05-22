@@ -72,6 +72,7 @@ files.rating.prefix = "vp"
 files.rating.extension = "-LookAtMe.log"
 
 path.eye = "Data/EyeLink/Output/" %>% paste0(path, .) #eye tracking data
+path.pupil  = "Data/Pupil/" %>% paste0(path, .)
 
 path2 = "C:/Users/mar84qk/Dropbox/Arbeit/C10 - Gamer Fear/3 Diagnostic Generalization/" #@work
 #path2 = sub("C:/Users/mar84qk", "D:", path2, fixed=TRUE) #@home
