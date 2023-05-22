@@ -1470,12 +1470,20 @@ eye.diagnosticity.bins %>% filter(bin <= ratingStart/1000) %>%
 
 # Wide format for correlations --------------------------------------------
 eyes.wide = eye.gen.diagnostic %>% select(-contains(".se")) %>% 
-  gather(measure, value, -c("subject", "diagnostic")) %>% unite(temp, measure, diagnostic) %>% spread(temp, value)
-measures = c("dwell", "dwell.non", "dwell.rois", "ms.diag", "ms.nondiag", "diagFirst", "fixN", "mFixTime", "roiSwitch", "scanPath")
-names(eyes.wide) = c("subject", paste0("Gen_", do.call(paste0, expand.grid(c("eyes_", "mn_"), measures %>% sort()))))
+  gather(measure, value, -c("subject", "diagnostic", "SPAI", "STAI")) %>% unite(temp, measure, diagnostic) %>% spread(temp, value) %>%
+  rename_with(function(cname) {
+    case_when(cname %>% grepl("_Eyes", ., fixed=T) ~ cname %>% gsub("_Eyes", "", ., fixed=T) %>% gsub(".m", "", ., fixed=T) %>% paste0("Gen_eyes_", .),
+              cname %>% grepl("_Mouth/Nose", ., fixed=T) ~ cname %>% gsub("_Mouth/Nose", "", ., fixed=T) %>% gsub(".m", "", ., fixed=T) %>% paste0("Gen_mn_", .),
+              T ~ cname)
+  }) %>% full_join(eye.gen %>% select(-contains(".se")) %>% rename_with(
+    function(cname) {paste0("Gen_all_", cname %>% gsub(".m", "", ., fixed=T))}, .cols=contains(".m")), .)
+
 # names(eyes.wide)[-1] = names(eyes.wide)[-1] %>% {ifelse(grepl("Eyes", ., fixed=T), "eyes", "mn")} %>% 
 #   paste("Gen", ., names(eyes.wide)[-1] %>% gsub("_.*", "", .) %>% gsub(".m", "", ., fixed=T), sep="_")
 
-eyes.wide = eye.gen %>% select(-contains(".se")) %>% merge(eyes.wide, by="subject", all=T) %>% tibble()
-names(eyes.wide)[1 + 1:length(measures)] = paste0("Gen_all_", measures)
+# measures = c("dwell", "dwell.non", "dwell.rois", "ms.diag", "ms.nondiag", "diagFirst", "fixN", "mFixTime", "roiSwitch", "scanPath")
+# names(eyes.wide) = c("subject", paste0("Gen_", do.call(paste0, expand.grid(c("eyes_", "mn_"), measures %>% sort()))))
+# eyes.wide = eye.gen %>% select(-contains(".se")) %>% merge(eyes.wide, by="subject", all=T) %>% tibble()
+# names(eyes.wide)[1 + 1:length(measures)] = paste0("Gen_all_", measures)
+
 #write_rds(eyes.wide, "eyes.wide.rds" %>% paste0(path.rds, .))
