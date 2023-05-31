@@ -29,9 +29,10 @@ savepath <- "C:/Users/jat41gk/Documents/Projekte/Visual Exploration Social Anxie
 
 #vpdat <- read.csv2(paste0(path,"inclusions.eye.csv"))
 vpn.eye = fixations$subject %>% unique() %>% setdiff(exclusions.eye.num) %>% sort()
-exclusions.test <- c(41,42,43) # testweise ausschließen
-vpn <- vpn.eye %>% setdiff(exclusions.test) #vpdat$filename
+#exclusions.test <- c(41,42,43) # testweise ausschließen
+vpn <- vpn.eye #%>% setdiff(exclusions.test) #vpdat$filename
 
+#vpn <- c(41, 42, 43)
 
 hz <- 1000
 newhz <- 100
@@ -58,6 +59,7 @@ for (vp in vpn) {
   
   for (block in 1:3) {  
     print(block)
+    #block <- 1
     # Load raw EDF data
     #trials <- edf.trial(paste(etpath,code,".edf",sep=""),samples=T,eventmask=T)
     trials <- read_edf(paste(etpath,code,"_",block,".edf",sep=""),import_samples=TRUE)
@@ -75,18 +77,49 @@ for (vp in vpn) {
     
     # Loop over trials to determine trial-by-trial pupil width
     rawpd <- numeric()
-    for (trial in 1:ntrial) {
+    for (trialnr in 1:ntrial) {
       # Determine onset (in ms)
-      onset <- msg$sttime[trial]
+      #trialnr <- 1
+      #trialnr <- 28
+      onset <- msg$sttime[trialnr]
       
       # Get pupil data
       trialdat <- trials$samples[(trials$samples$time>(onset+st)) & (trials$samples$time<=(onset+en)),]
+      
+      #include blinks
+      blinksdat <- trials$blinks
+      blinksdat <- dplyr::filter(blinksdat, blinksdat$trial == trialnr)
+      trialdat$blink <- 0
+    
+      # solve with loop? 
+      for(i in 1:length(blinksdat$trial)) {
+        # i <- 1
+        for (j in 1:length(trialdat$trial)) {
+          #j <- 3479
+          #trialdat$paR[j]
+          ifelse((trialdat$time[j] >= blinksdat$sttime[i] & trialdat$time[j] <= blinksdat$entime[i]), trialdat$blink[j] <- 1, trialdat$blink[j] <- trialdat$blink[j])
+        }
+      }
+  
       # Use pupil data of the right eye / Exception: Look023 -> left eye was erroneously tracked
+      if (length(trialdat$trial) != 7000) {
+        rm(filling)
+        f <- matrix(NA, ncol = length(trialdat), nrow = 7000-length(trialdat$trial))
+        filling <- data.frame(f)
+        names(filling) <- names(trialdat)
+        trialdat <- rbind(trialdat, filling)
+      }
+      
+      # if (length(pd) != 7000) {
+      #   pd <- c(pd, c(rep(NA, 7000 - length(pd))))
+      #   trialdat$
+      # }
       if (code=="Look023") {
         pd <- trialdat$paL
       } else {
         pd <- trialdat$paR
       }
+    
       # Interpolate blinks
       pd[trialdat$blink==1] <- NA
       if (sum(!is.na(pd))>=2) {
