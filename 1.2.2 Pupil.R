@@ -8,13 +8,13 @@ pupilToNum = function(pupilFile, path.sep="/", file.ext="\\.") {
   pupilFile %>% pathToCode(path.sep, file.ext) %>% gsub("[^0-9]", "", .) %>% as.integer()
 }
 
-files.pupil = list.files(path.pupil, pattern = ".csv", full.names = T)
+files.pupil = list.files(path.pupil, pattern = "_pupil.csv", full.names = T)
 pupil.avg = list() #vector("list", length(files.pupil))
 pupil.trial = list()
 for (filename in files.pupil) {
   #filename = files.pupil %>% sample(1)
   df = read.csv2(filename) %>% group_by(trial) %>% nest() %>%
-    merge(readRDS("ratings.rds" %>% paste0(path.rds, .)) %>% filter(subject==filename %>% pupilToNum()) %>% select(trial, shock, threat, pair, diagnostic, sex, phase, threat_num, threat_both), by.x = "trial") %>% 
+    merge(readRDS("ratings.rds" %>% paste0(path.rds, .)) %>% dplyr::filter(subject==filename %>% pupilToNum()) %>% select(trial, shock, threat, pair, diagnostic, sex, phase, threat_num, threat_both), by.x = "trial") %>% 
     mutate(data = data %>% map(function(x) {
       signal = x %>% as.numeric()
       signal = signal - mean(signal[1:sample.rate.pupil]) #1 sec baseline correction
@@ -29,8 +29,10 @@ for (filename in files.pupil) {
       mmChange.se = se(mmChange, na.rm=T), mmChange = mean(mmChange, na.rm=T),
       change.z.se = se(change.z, na.rm=T), change.z = mean(change.z, na.rm=T)))
   
-  pupil.avg[[filename %>% pathToCode()]] = subject.avg
-  pupil.trial[[filename %>% pathToCode()]] = df
+  #pupil.avg[[filename %>% pathToCode()]] = subject.avg
+  pupil.avg[[paste0("vp",ifelse(filename %>% pupilToNum()<10,"0",""),as.character(filename %>% pupilToNum()))]] = subject.avg
+  #pupil.trial[[filename %>% pathToCode()]] = df
+  pupil.trial[[paste0("vp",ifelse(filename %>% pupilToNum()<10,"0",""),as.character(filename %>% pupilToNum()))]] = df
 }
 
 
@@ -103,52 +105,84 @@ pupil.diag %>% ggplot(aes(x=time, y=mmChange, color=threat, group=threat)) +
 
 # ANOVA -------------------------------------------------------------------
 pupil.trial.avg = pupil.trial %>% bind_rows(.id="subject") %>% group_by(subject, trial, phase, threat, diagnostic, sex) %>% 
-  summarise(pupil = data %>% bind_rows() %>% filter(time > .5, time <= 4) %>% summarise(
+  summarise(pupil = data %>% bind_rows() %>% dplyr::filter(time > .5, time <= 4) %>% summarise(
     mmChange.se = se(mmChange, na.rm=T), mmChange = mean(mmChange, na.rm=T),
     change.z.se = se(change.z, na.rm=T), change.z = mean(change.z, na.rm=T))) %>% 
-  mutate(subject = subject %>% gsub("Look", "", .) %>% gsub("_pupil", "", .) %>% as.numeric(), #subject to number
+  mutate(subject = subject %>% gsub("vp", "", .) %>% as.numeric(), #subject to number
          mmChange = pupil$mmChange, mmChange.se = pupil$mmChange.se, mmChange.z = pupil$change.z, mmChange.z.se = pupil$change.z.se) %>% select(-pupil) 
 #pupil.trial.avg %>% write_rds("pupil.trial.avg.rds" %>% paste0(path.rds, .))
 
+questionnaires_pupil <- questionnaires %>%
+  mutate(subject = paste0("vp",ifelse(subject < 10, "0",""),subject))
+
 pupil.subject = pupil.avg %>% bind_rows(.id="subject") %>% mutate(time = signal$time, mmChange = signal$mmChange, change.z = signal$change.z) %>% select(-signal) %>% 
-  filter(time > .5, time <= 4) %>% group_by(subject, phase, threat, diagnostic, sex) %>% 
+  dplyr::filter(time > .5, time <= 4) %>% group_by(subject, phase, threat, diagnostic, sex) %>% 
   summarise(mmChange = mean(mmChange, na.rm=T), change.z = mean(change.z, na.rm=T)) %>% 
-  group_by(subject, phase) %>% mutate(mmChange.z = scale(mmChange))
+  group_by(subject, phase) %>% mutate(mmChange.z = scale(mmChange))%>%
+  left_join(questionnaires_pupil, by="subject") 
 
-pupil.subject %>% filter(phase=="PreAcq") %>% group_by(subject, threat) %>% summarise(mmChange = mean(mmChange, na.rm=T)) %>% 
-  t.test(mmChange ~ threat, ., paired=T) %>% apa::t_apa(es_ci=T)
-pupil.subject %>% filter(phase=="Acq") %>% group_by(subject, threat) %>% summarise(mmChange = mean(mmChange, na.rm=T)) %>% 
+#pupil.subject %>% dplyr::filter(phase=="PreAcq") %>% group_by(subject, threat) %>% summarise(mmChange = mean(mmChange, na.rm=T)) %>%  #no phase "PreAcq"?
+  #t.test(mmChange ~ threat, ., paired=T) %>% apa::t_apa(es_ci=T)
+
+pupil.subject %>% dplyr::filter(phase=="Acq") %>% group_by(subject, threat) %>% summarise(mmChange = mean(mmChange, na.rm=T)) %>% 
   t.test(mmChange ~ threat, ., paired=T) %>% apa::t_apa(es_ci=T)
 
-pupil.subject %>% filter(phase=="Acq") %>% group_by(threat, subject) %>% summarise(mmChange = mean(mmChange, na.rm=T)) %>% 
+pupil.subject %>% dplyr::filter(phase=="Acq") %>% group_by(threat, subject) %>% summarise(mmChange = mean(mmChange, na.rm=T)) %>% 
   summarise(mmChange.se = se(mmChange, na.rm=T), mmChange = mean(mmChange, na.rm=T))
   
-
-anova.pupil = pupil.subject %>% filter(phase=="Gen") %>% 
+anova.pupil = pupil.subject %>% dplyr::filter(phase=="Gen") %>% 
   ez::ezANOVA(dv=.(mmChange), wid=.(subject),
               #within=.(threat), within_full=.(diagnostic),
               within=.(threat, diagnostic),
+              between=.(SPAI), observed=SPAI,
               detailed=T, type=2)
 anova.pupil %>% apa::anova_apa()
 anova.pupil %>% ez.ci()
 
 # t-tests of threat-levels vs. CS-
-pupil.ga.gen.subj = pupil.subject %>% filter(phase=="Gen") %>% group_by(threat, subject) %>% summarise(mmChange = mean(mmChange, na.rm=T)) %>% 
+pupil.ga.gen.subj = pupil.subject %>% dplyr::filter(phase=="Gen") %>% group_by(threat, subject) %>% summarise(mmChange = mean(mmChange, na.rm=T)) %>% 
   mutate(threat_num = threat %>% as.numeric())
 for (i in 2:6) {
   levels = c(1, i)
   cat(paste0("\n\nComparing levels: ", paste(levels, collapse=" vs. "), "\n"))
-  pupil.ga.gen.subj %>% filter(threat_num %in% levels) %>% 
+  pupil.ga.gen.subj %>% dplyr::filter(threat_num %in% levels) %>% 
     t.test(mmChange ~ threat, ., alternative="less", 
            paired=T) %>% apa::t_apa(es_ci=T) #schoRsch::t_out()
 }
+
+# Split in HSA/LSA 
+
+pupil.subject %>%
+  ungroup() %>%
+  summarise(
+    median = median(SPAI)
+  )
+
+pupil.subject.spai = pupil %>% dplyr::filter(phase == "Gen") %>% 
+  left_join(questionnaires_pupil, by="subject") %>%
+  mutate(spai.split = case_when(
+    SPAI >= 2.61 ~ "HSA",
+    SPAI < 2.61 ~ "LSA"
+  ))%>%  
+  group_by(threat, time, spai.split) %>% 
+  summarise(mmChange = mean(mmChange, na.rm=T), change.z = mean(change.z, na.rm=T)) %>% 
+  mutate(time = time %>% as.character() %>% as.numeric()) 
+print(pupil.trialtime.spai.plot <- pupil.subject.spai %>% ggplot(aes(x=time, y=mmChange, color=threat, group=threat, shape=threat)) + 
+        geom_hline(yintercept = 0, linetype="dashed") +
+        #geom_ribbon(aes(ymin=mmChange-mmChange*1.96, ymax=mmChange+mmChange*1.96, fill=threat), color=NA, alpha=.1) +
+        #geom_errorbar(aes(ymin=HRchange-HRchange.se*1.96, ymax=HRchange+HRchange.se*1.96)) +
+        geom_point(size=3, data=subset(pupil.subject.spai, time == 5.5)) + 
+        geom_line() + 
+        facet_wrap(vars(spai.split)) +
+        scale_color_manual(values=colors, labels=c("CS-", paste0("GS", 1:4), "CS+")) + scale_shape_discrete(labels=c("CS-", paste0("GS", 1:4), "CS+")) + scale_fill_manual(values=colors, labels=c("CS-", paste0("GS", 1:4), "CS+")) + 
+        ylab("Change in Pupil Diameter (mm)") + xlab("Trial Time (sec)") + labs(color="Threat", shape="Threat", fill="Threat") + myGgTheme)
 
 #mean scores generalization phase
 pupil.ga.gen = pupil.ga.gen.subj %>% group_by(threat) %>% 
   summarise(mmChange.se = se(mmChange, na.rm=T), mmChange = mean(mmChange, na.rm=T))
 print(pupil.gradient.plot <- pupil.ga.gen %>% ggplot(aes(x=threat, y=mmChange, color=threat, group=NA)) + 
         #geom_dotplot(data=pupil.ga.gen.subj, mapping=aes(group=threat, fill=threat), binaxis="y", alpha=.25, color="black", stackratio=1, stackdir="centerwhole", dotsize=.5) +
-        geom_point() + geom_path(data=pupil.ga.gen %>% filter(threat %in% c("CS-", "CS+")), color = "black", size=1.5) + #generalization line (geom_point first for order of x-axis)
+        geom_point() + geom_path(data=pupil.ga.gen %>% dplyr::filter(threat %in% c("CS-", "CS+")), color = "black", size=1.5) + #generalization line (geom_point first for order of x-axis)
         geom_line(size=1) + geom_point(size=4.5) + 
         #geom_errorbar(aes(ymin=mmChange-mmChange.se*1.96, ymax=mmChange+mmChange.se*1.96), size=1.5) +
         geom_errorbar(aes(ymin=mmChange-mmChange.se, ymax=mmChange+mmChange.se), size=1.5) +
@@ -177,7 +211,7 @@ print(pupil.gradient.plot <- pupil.ga.gen %>% ggplot(aes(x=threat, y=mmChange, c
 #pupil.gradient.plot %>% ggsave("5.2 Pupil Generalization.png", ., device="png", path=paste0(path.rds, "../../4 Results/1 no MRI/"), width=1920, height=1080, units="px")
 
 #pupil grand average for generalization & only between errorbars
-print(pupil.grandAverage.plot <- pupil %>% filter(phase=="Gen") %>% #filter(time <= 4) %>%
+print(pupil.grandAverage.plot <- pupil %>% dplyr::filter(phase=="Gen") %>% #filter(time <= 4) %>%
         group_by(phase, threat, time, subject) %>% summarise(mmChange = mean(mmChange, na.rm=T)) %>% 
         summarise(mmChange.se = se(mmChange, na.rm=T), mmChange = mean(mmChange, na.rm=T)) %>% 
         ggplot(aes(x=time, y=mmChange, color=threat, group=threat)) + 
@@ -210,12 +244,12 @@ print(pupil.grandAverage.plot <- pupil %>% filter(phase=="Gen") %>% #filter(time
 #cowplot::plot_grid(pupil.grandAverage.plot, pupil.gradient.plot, ncol=1, labels="auto") %>% ggsave("Figure 3. Pupil.png", ., device="png", path=paste0(path.rds, "../../5 Output/1 Paper - Fear Generalization x Attention/"), width=16.26, height=21, units="cm") #Figure 3
 
 # Reliability -------------------------------------------------------------
-pupil.reliability = pupil.trial.avg %>% filter(phase == "Gen") %>% select(subject, threat, diagnostic, mmChange) %>% 
+pupil.reliability = pupil.trial.avg %>% dplyr::filter(phase == "Gen") %>% select(subject, threat, diagnostic, mmChange) %>% 
   group_by(subject, threat, diagnostic) %>% mutate(trial = 1:n()) %>% arrange(subject, trial, threat, diagnostic)
 alpha.pupil = tibble()
 for (t in pupil.reliability %>% pull(threat) %>% unique() %>% sort()) {
   for (d in pupil.reliability %>% pull(diagnostic) %>% unique() %>% sort()) {
-    alpha.temp = pupil.reliability %>% filter(threat == t, diagnostic == d) %>% 
+    alpha.temp = pupil.reliability %>% dplyr::filter(threat == t, diagnostic == d) %>% 
       pivot_wider(names_from = trial, names_prefix = "trial", values_from = mmChange) %>% ungroup() %>% select(contains("trial")) %>% 
       ltm::cronbach.alpha(CI=T, na.rm=T)
     cat(t, " & ", d, ": ", alpha.temp$alpha %>% signif(3), " [", paste0(alpha.temp$ci %>% signif(3), collapse=", "), "]\n", sep="")
@@ -227,12 +261,12 @@ alpha.pupil %>% mutate(alpha.z = alpha %>% psych::fisherz()) %>%
 
 # Gradient Analysis -------------------------------------------------------
 individualPlots = F
-pupil.subject.gen = pupil.subject %>% filter(phase=="Gen")
+pupil.subject.gen = pupil.subject %>% dplyr::filter(phase=="Gen")
 
 #subject-level means generalization phase
 pupil.gradients.simple = data.frame(subject=character(), lds=numeric(), diff=numeric(), level=numeric())
 for (s in pupil.subject.gen$subject %>% unique()) {
-  pupil.temp = pupil.subject.gen %>% filter(subject==s) %>% 
+  pupil.temp = pupil.subject.gen %>% dplyr::filter(subject==s) %>% 
     group_by(threat, subject) %>% summarise(mmChange.se = se(mmChange, na.rm=T), mmChange = mean(mmChange, na.rm=T),
                                             mmChange.z.se = se(mmChange.z, na.rm=T), mmChange.z = mean(mmChange.z, na.rm=T))
   
@@ -255,12 +289,12 @@ names(pupil.gradients.simple)[-1] = "Gen_all_" %>% paste0(names(pupil.gradients.
 #subject-level means generalization phase by diagnostic
 pupil.gradients.diagnostic = data.frame()
 for (s in pupil.subject.gen$subject %>% unique()) {
-  pupil.temp = pupil.subject.gen %>% filter(subject==s)
+  pupil.temp = pupil.subject.gen %>% dplyr::filter(subject==s)
   
-  gradient.eyes = "Eyes" %>% {filter(pupil.temp, diagnostic==.)} %>% .$mmChange %>% gradient.analysis()
-  gradient.mn = "Mouth/Nose" %>% {filter(pupil.temp, diagnostic==.)} %>% .$mmChange %>% gradient.analysis()
-  gradient.eyes.z = "Eyes" %>% {filter(pupil.temp, diagnostic==.)} %>% .$mmChange.z %>% gradient.analysis()
-  gradient.mn.z = "Mouth/Nose" %>% {filter(pupil.temp, diagnostic==.)} %>% .$mmChange.z %>% gradient.analysis()
+  gradient.eyes = "Eyes" %>% {dplyr::filter(pupil.temp, diagnostic==.)} %>% .$mmChange %>% gradient.analysis()
+  gradient.mn = "Mouth/Nose" %>% {dplyr::filter(pupil.temp, diagnostic==.)} %>% .$mmChange %>% gradient.analysis()
+  gradient.eyes.z = "Eyes" %>% {dplyr::filter(pupil.temp, diagnostic==.)} %>% .$mmChange.z %>% gradient.analysis()
+  gradient.mn.z = "Mouth/Nose" %>% {dplyr::filter(pupil.temp, diagnostic==.)} %>% .$mmChange.z %>% gradient.analysis()
   pupil.gradients.diagnostic = bind_rows(pupil.gradients.diagnostic, 
                                          data.frame(subject=s, 
                                                     Gen_eyes_lds = gradient.eyes[1], Gen_eyes_diff = gradient.eyes[2], Gen_eyes_level = gradient.eyes[3],
