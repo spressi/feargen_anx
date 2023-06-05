@@ -150,8 +150,20 @@ for (i in 2:6) {
            paired=T) %>% apa::t_apa(es_ci=T) #schoRsch::t_out()
 }
 
-# Split in HSA/LSA 
+#SPAI Main effect (marginally significant)
+pupil.simple.gen.lvl = pupil.subject %>% group_by(subject, SPAI, STAI) %>% summarise(mmChange = mean(mmChange, na.rm=T), change.z = mean(change.z, na.rm=T))
+pupil.simple.gen.lvl %>% with(cor.test(mmChange, SPAI, alternative="less")) %>% correlation_out()
+pupil.simple.gen.lvl %>% with(cor.test(mmChange, SPAI)) %>% correlation_out()
+print(pupil.spai.plot <- pupil.simple.gen.lvl %>% ggplot(aes(x=SPAI, y=mmChange, color=SPAI, fill=SPAI)) +
+        geom_errorbar(aes(ymin=mmChange-mmChange*1.96, ymax=mmChange+mmChange*1.96), width=spai.width) +
+        stat_smooth(method="lm", color = "black") +
+        #geom_point(size=4, shape=21, color="black") +
+        geom_point(size=4) + 
+        ylab("Pupil Diameter Change (mm)") +
+        scale_color_viridis_c() + scale_fill_viridis_c() + myGgTheme + theme(legend.position = "none"))
 
+
+# Split in HSA/LSA 
 pupil.subject %>%
   ungroup() %>%
   summarise(
