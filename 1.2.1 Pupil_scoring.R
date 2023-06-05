@@ -32,7 +32,7 @@ vpn.eye = fixations$subject %>% unique() %>% setdiff(exclusions.eye.num) %>% sor
 #exclusions.test <- c(41,42,43) # testweise ausschließen
 vpn <- vpn.eye #%>% setdiff(exclusions.test) #vpdat$filename
 
-#vpn <- c(41, 42, 43)
+#vpn <- c(48)
 
 hz <- 1000
 newhz <- 100
@@ -80,11 +80,17 @@ for (vp in vpn) {
     for (trialnr in 1:ntrial) {
       # Determine onset (in ms)
       #trialnr <- 1
-      #trialnr <- 28
-      onset <- msg$sttime[trialnr]
+      #trialnr <- 41
+      onset <- msg$sttime[trialnr]+1000
       
       # Get pupil data
       trialdat <- trials$samples[(trials$samples$time>(onset+st)) & (trials$samples$time<=(onset+en)),]
+      if(length(trialdat$trial) == 0) {
+         trialdat.fill<- matrix(NA, ncol = length(trialdat), nrow = 1)
+         trialdat.fill <- as.data.frame(trialdat.fill)
+         names(trialdat.fill) <- names(trialdat)
+         trialdat <- trialdat.fill
+      }
       
       #include blinks
       blinksdat <- trials$blinks
@@ -103,18 +109,13 @@ for (vp in vpn) {
   
       # Use pupil data of the right eye / Exception: Look023 -> left eye was erroneously tracked
       if (length(trialdat$trial) != 7000) {
-        rm(filling)
         f <- matrix(NA, ncol = length(trialdat), nrow = 7000-length(trialdat$trial))
         filling <- data.frame(f)
         names(filling) <- names(trialdat)
-        trialdat <- rbind(trialdat, filling)
+        trialdat <- rbind(trialdat, filling) # mit bind_rows() versuchen
       }
       
-      # if (length(pd) != 7000) {
-      #   pd <- c(pd, c(rep(NA, 7000 - length(pd))))
-      #   trialdat$
-      # }
-      if (code=="Look023") {
+      if (code=="vp48") {   #left eye was tracked for this subject 
         pd <- trialdat$paL
       } else {
         pd <- trialdat$paR
@@ -163,10 +164,10 @@ for (vp in vpn) {
     # Save proprocessed data
     prot <- data.frame(trial=1:ntrial,rawpd)
     names(prot) <- c("trial",paste("pd",1:(ncol(rawpd)),sep=""))
-    write.csv2(prot,paste0(savepath,code,"_",block,"_pupil.csv"),row.names=FALSE,quote=FALSE)
+    write.csv2(prot,paste0(savepath,"Blockwise/",code,"_",block,"_pupil.csv"),row.names=FALSE,quote=FALSE)
     
     zip(paste0(savepath,code,"_",block,"_pupil.zip"),paste0(protpath,code,"_pupil.csv"),flags="-j9X")
-    #file.remove(paste0(protpath,code,"_pupil.csv"))
+    #file.remove(paste0(protpath,"Blockwise/",code,"_pupil.csv"))
     prot_all <- rbind(prot_all, prot)
   }
   prot_all$trial <- 1:(nrow(prot_all))
@@ -201,4 +202,4 @@ ggplot(plotdat, aes(y=y, x=sec)) +
   labs(x = "Time (s)") +
   labs(y = "Pupil change (mm)")
 
-ggsave(paste(savepath,"Pupil-Changes_GA.png",sep=""),width=12,height=9,units="cm",scale=1.2)
+ggsave(paste(savepath,"Pupil-Changes_GAst0.png",sep=""),width=12,height=9,units="cm",scale=1.2)
