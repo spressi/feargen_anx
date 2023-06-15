@@ -124,20 +124,16 @@ pupil.subject = pupil.avg %>% bind_rows(.id="subject") %>% mutate(time = signal$
 #pupil.subject %>% dplyr::filter(phase=="PreAcq") %>% group_by(subject, threat) %>% summarise(mmChange = mean(mmChange, na.rm=T)) %>%  #no phase "PreAcq"?
   #t.test(mmChange ~ threat, ., paired=T) %>% apa::t_apa(es_ci=T)
 
+# Acquisition
 pupil.subject %>% dplyr::filter(phase=="Acq") %>% group_by(subject, threat) %>% summarise(mmChange = mean(mmChange, na.rm=T)) %>% 
   t.test(mmChange ~ threat, ., paired=T) %>% apa::t_apa(es_ci=T)
 
 pupil.subject %>% dplyr::filter(phase=="Acq") %>% group_by(threat, subject) %>% summarise(mmChange = mean(mmChange, na.rm=T)) %>% 
   summarise(mmChange.se = se(mmChange, na.rm=T), mmChange = mean(mmChange, na.rm=T))
-  
-anova.pupil = pupil.subject %>% dplyr::filter(phase=="Gen") %>% 
-  ez::ezANOVA(dv=.(mmChange), wid=.(subject),
-              #within=.(threat), within_full=.(diagnostic),
-              within=.(threat, diagnostic),
-              between=.(SPAI), observed=SPAI,
-              detailed=T, type=2)
-anova.pupil %>% apa::anova_apa()
-anova.pupil %>% ez.ci()
+
+# Generalization
+pupil.subject %>% dplyr::filter(phase=="Gen") %>% group_by(threat, subject) %>% summarise(mmChange = mean(mmChange, na.rm=T)) %>% 
+  summarise(mmChange.se = se(mmChange, na.rm=T), mmChange = mean(mmChange, na.rm=T))
 
 # t-tests of threat-levels vs. CS-
 pupil.ga.gen.subj = pupil.subject %>% dplyr::filter(phase=="Gen") %>% group_by(threat, subject) %>% summarise(mmChange = mean(mmChange, na.rm=T)) %>% 
@@ -149,6 +145,32 @@ for (i in 2:6) {
     t.test(mmChange ~ threat, ., alternative="less", 
            paired=T) %>% apa::t_apa(es_ci=T) #schoRsch::t_out()
 }
+
+# Generalization x diagnostic
+pupil.subject %>% dplyr::filter(phase=="Gen") %>% group_by(threat, diagnostic, subject) %>% summarise(mmChange = mean(mmChange, na.rm=T)) %>% 
+  summarise(mmChange.se = se(mmChange, na.rm=T), mmChange = mean(mmChange, na.rm=T))
+
+# eyes
+pupil.subject %>% dplyr::filter(phase=="Gen") %>% dplyr::filter(diagnostic == "Eyes") %>% ungroup() %>%
+  summarise(mmChange.se = se(mmChange, na.rm=T), mmChange = mean(mmChange, na.rm=T))
+
+# mouth/nose
+pupil.subject %>% dplyr::filter(phase=="Gen") %>% dplyr::filter(diagnostic == "Mouth/Nose") %>% ungroup() %>%
+  summarise(mmChange.se = se(mmChange, na.rm=T), mmChange = mean(mmChange, na.rm=T))
+
+pupil.subject %>% dplyr::filter(phase=="Gen") %>% group_by(subject, diagnostic) %>% summarise(mmChange = mean(mmChange, na.rm=T)) %>% 
+  t.test(mmChange ~ diagnostic, ., paired=T) %>% apa::t_apa(es_ci=T)
+
+
+anova.pupil = pupil.subject %>% dplyr::filter(phase=="Gen") %>% 
+  ez::ezANOVA(dv=.(mmChange), wid=.(subject),
+              #within=.(threat), within_full=.(diagnostic),
+              within=.(threat, diagnostic),
+              between=.(SPAI), observed=SPAI,
+              detailed=T, type=2)
+anova.pupil %>% apa::anova_apa()
+anova.pupil %>% ez.ci()
+
 
 #SPAI Main effect (marginally significant)
 pupil.simple.gen.lvl = pupil.subject %>% group_by(subject, SPAI, STAI) %>% summarise(mmChange = mean(mmChange, na.rm=T), change.z = mean(change.z, na.rm=T))
@@ -333,3 +355,4 @@ names(pupil.gradients)[-1] = "Pup_" %>% paste0(names(pupil.gradients)[-1])
 pupil.gradients %>% pull(Pup_Gen_all_lds) %>% t.test(mu = 0, alternative="greater") %>% apa::t_apa(es_ci=T)
 #pupil.gradients %>% pull(Pup_Gen_all_lds) %>% mean() %>% signif(3) %>% paste0("M = ", .)
 pupil.gradients %>% summarise(M = Pup_Gen_all_lds %>% mean(), SD = Pup_Gen_all_lds %>% sd()) %>% tibble()
+

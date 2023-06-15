@@ -48,3 +48,4 @@ for (file in files.phys) {
   if (length(mst)!=trials.n || breaks.theory!=breaks.detected || any(breakPositions.theory!=breakPositions.detected)) 
     warning(file)
 }
+

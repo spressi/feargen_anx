@@ -797,8 +797,8 @@ eye.diagnosticity %>%
   ez::ezANOVA(dv=.(relDwell), wid=.(subject),
               within=.(ROI, Diagnosticity), within_full=.(threat),
               #within=.(threat, ROI, Diagnosticity),
-              between=.(SPAI), observed=SPAI,
-              #between=.(STAI), observed=STAI,
+              #between=.(SPAI), observed=SPAI,
+              between=.(STAI), observed=STAI,
               detailed=T, type=2) %>% apa::anova_apa(force_sph_corr=T)
 
 eye.diagnosticity.subj = eye.diagnosticity %>% group_by(diagnostic, Diagnosticity, ROI, subject) %>% summarise(relDwell=mean(relDwell, na.rm=T)) %>% 
