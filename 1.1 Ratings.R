@@ -127,7 +127,8 @@ rm(ratings.list, conditions.list)
 ratings = ratings.all %>% subset(subject %in% exclusions == F) %>% #TODO rather set all ratings to NA? better for preservation of conditions. but then Eye analysis has to be changed, cp. filter(condition != 0) #no valid fixation during trial
   subset((subject %in% exclusions.onlyGen & phase != "Gen") == F) #exclude habituation & acquisition for onlyGen subjects (see "0 General.R")
 #conditions.csp %>% filter(subject %in% exclusions == F) %>% .[-1] %>% apply(2, table) # every condition independently
-conditions.csp %>% filter((subject %in% c(exclusions, exclusions.onlyGen) ) == F) %>% 
+#conditions.csp %>% filter((subject %in% c(exclusions, exclusions.onlyGen)) == F) %>% #only subjects that have all phases
+conditions.csp %>% filter((subject %in% exclusions) == F) %>% #all subjects with valid generalization phase
   transmute(condition = paste0(pairs, csp1, csp2)) %>% table() #condition combinations
 
 ratings.valid = ratings %>% group_by(subject, phase) %>% summarise(NAs = rating %>% is.na() %>% sum() / n()) %>% arrange(desc(NAs))
