@@ -326,12 +326,12 @@ ratings.subject.gen.lvl %>% ggplot(aes(x=STAI, y=rating.m, color=STAI, fill=STAI
 individualPlots = F
 
 #subject-level means generalization phase
-gradients.simple = data.frame(subject=character(), lds=numeric(), diff=numeric(), level=numeric(), stringsAsFactors=F)
+gradients.simple = data.frame(subject=numeric(), lds=integer(), diff=numeric(), level=numeric(), stringsAsFactors=F)
 for (s in ratings.subject.gen$subject %>% unique()) {
   ratings.temp = ratings.subject.gen %>% filter(subject==s)
   
   gradient = gradient.analysis(ratings.temp$rating.m)
-  gradients.simple = bind_rows(gradients.simple, data.frame(subject=s %>% as.character(), lds=gradient["lds"], diff=gradient["diff"], level=gradient["level"], row.names = NULL, stringsAsFactors=F))
+  gradients.simple = bind_rows(gradients.simple, data.frame(subject=s, lds=gradient["lds"], diff=gradient["diff"], level=gradient["level"], row.names = NULL, stringsAsFactors=F))
   
   if (individualPlots) {
     gradient = gradient %>% signif(3)
@@ -344,6 +344,7 @@ for (s in ratings.subject.gen$subject %>% unique()) {
     invisible(readline(prompt="Press [enter] to continue")) #TODO save to file instead
   }
 }
+
 names(gradients.simple) = c("subject", "Gen_all_lds", "Gen_all_diff", "Gen_all_level")
 
 #subject-level means generalization phase by diagnostic
@@ -366,7 +367,7 @@ for (s in ratings.subject.gen.diagnostic$subject %>% unique()) {
 }
 names(gradients.diagnostic) = c("lds", "diff", "level") %>% {c("subject", paste0("Gen_eyes_", .), paste0("Gen_mn_", .))}
 
-gradients = merge(gradients.simple, gradients.diagnostic, by="subject")
+gradients = full_join(gradients.simple, gradients.diagnostic, by="subject")
 
 # #subject-level means first half generalization phase
 # gradients.simple.first.half = data.frame(subject=character(), lds=numeric(), diff=numeric(), level=numeric(), stringsAsFactors=F)
@@ -409,7 +410,7 @@ gradients = merge(gradients.simple, gradients.diagnostic, by="subject")
 # }
 # names(gradients.diagnostic.first.half) = c("lds", "diff", "level") %>% {c("subject", paste0("Gen_eyes_", .), paste0("Gen_mn_", .))}
 # 
-# gradients.first.half = merge(gradients.simple.first.half, gradients.diagnostic.first.half, by="subject")
+# gradients.first.half = full_join(gradients.simple.first.half, gradients.diagnostic.first.half, by="subject")
 
 # Wide format for correlations ----------------------------------------------------
 #all phases except generalization
@@ -421,19 +422,19 @@ ratings.wide = ratings.wide %>% unite(temp, phase, threat) %>% spread(temp, rati
 #all ratings in generalization
 ratings.wide.threat = ratings.subject.gen %>% select(-rating.se, -threat_num) %>% spread(threat, rating.m)
 names(ratings.wide.threat) = c("subject", "Gen_all_CS-", paste0("Gen_all_GS", 1:4), "Gen_all_CS+")
-ratings.wide = merge(ratings.wide, ratings.wide.threat, by="subject")
+ratings.wide = full_join(ratings.wide, ratings.wide.threat, by="subject")
 
 # #ratings in first half of generalization 
 # ratings.wide.first.threat = ratings.subject.first.gen %>% select(-rating.se, -threat_num) %>% spread(threat, rating.m)
 # names(ratings.wide.first.threat) = c("subject", "Gen_all_CS-", paste0("Gen_all_GS", 1:4), "Gen_all_CS+")
-# ratings.first.wide = merge(ratings.wide, ratings.wide.first.threat, by="subject")
+# ratings.first.wide = full_join(ratings.wide, ratings.wide.first.threat, by="subject")
 
 #gradients
-ratings.wide = merge(ratings.wide, gradients, by="subject") %>% 
+ratings.wide = full_join(ratings.wide, gradients, by="subject") %>% 
   select("subject", contains("Hab"), contains("Acq"), contains("Gen"), everything()) %>% tibble()
 
 # #gradients first half
-# ratings.first.wide = merge(ratings.first.wide, gradients.first.half, by="subject") %>% 
+# ratings.first.wide = full_join(ratings.first.wide, gradients.first.half, by="subject") %>% 
 #   select("subject", contains("Hab"), contains("Acq"), contains("Gen"), everything()) %>% tibble()
 
 #write_rds(ratings.wide, "ratings.wide.rds" %>% paste0(path.rds, .))
