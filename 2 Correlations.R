@@ -4,14 +4,14 @@ if(!require(tidyverse)) install.packages("tidyverse"); library(tidyverse)
 requirePackage("lme4")
 requirePackage("lmerTest")
 
-#ratings.wide = read_rds("ratings.wide.rds" %>% paste0(path, .)) #or path.rds
-#eyes.wide = read_rds("eyes.wide.rds" %>% paste0(path, .)) #or path.rds
-#heart.wide = read_rds("heart.wide.rds" %>% paste0(path, .)) #or path.rds
-#eda.wide = read_rds("eda.wide.rds" %>% paste0(path, .)) #or path.rds
+#ratings.wide = read_rds("ratings.wide.rds" %>% paste0(path.rds, .)) #or path
+#eyes.wide = read_rds("eyes.wide.rds" %>% paste0(path.rds, .)) #or path
+#heart.wide = read_rds("heart.wide.rds" %>% paste0(path.rds, .)) #or path
+#eda.wide = read_rds("eda.wide.rds" %>% paste0(path.rds, .)) #or path
 
 data.wide = full_join(questionnaires, ratings.wide, by="subject") %>% 
-  full_join(eyes.wide, by=c("subject", "SPAI")) %>% 
-  full_join(heart.wide, by="subject") #%>% 
+  full_join(eyes.wide, by=c("subject", "SPAI", "STAI")) %>% 
+  full_join(heart.wide, by="subject") %>% 
   full_join(eda.wide, by="subject")
 
 # data.wide.first.half = full_join(questionnaires, ratings.first.wide, by="subject") %>% 
@@ -100,10 +100,10 @@ data.wide %>% with(cor.test(Gen_mn_dwell.non, SPAI, alternative="two.sided")) %>
 # #reg.spai %>% lmer.ci(twotailed = F)
 
 #latency
-data.wide %>% with(cor.test(Gen_eyes_ms.diag, SPAI, alternative="two.sided")) %>% correlation_out()
-data.wide %>% with(cor.test(Gen_mn_ms.diag, SPAI, alternative="two.sided")) %>% correlation_out()
-data.wide %>% with(cor.test(Gen_eyes_ms.nondiag, SPAI, alternative="two.sided")) %>% correlation_out()
-data.wide %>% with(cor.test(Gen_mn_ms.nondiag, SPAI, alternative="two.sided")) %>% correlation_out()
+data.wide %>% with(cor.test(Gen_eyes_ms, SPAI, alternative="two.sided")) %>% correlation_out()
+data.wide %>% with(cor.test(Gen_mn_ms, SPAI, alternative="two.sided")) %>% correlation_out()
+data.wide %>% with(cor.test(Gen_eyes_ms.non, SPAI, alternative="two.sided")) %>% correlation_out()
+data.wide %>% with(cor.test(Gen_mn_ms.non, SPAI, alternative="two.sided")) %>% correlation_out()
 
 
 # Ratings -----------------------------------------------------------------
@@ -112,7 +112,7 @@ data.wide %>% with(cor.test(Gen_mn_ms.nondiag, SPAI, alternative="two.sided")) %
 #Ratings: LDS & Square Root of Time to diagnostic ROI
 reg.lds.ms.sqr = data.wide %>% filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
   gather("lds.type", "lds", c("Gen_eyes_lds", "Gen_mn_lds")) %>% 
-  gather("ms.diag.type", "ms.diag", c("Gen_eyes_ms.diag", "Gen_mn_ms.diag")) %>%
+  gather("ms.diag.type", "ms.diag", c("Gen_eyes_ms", "Gen_mn_ms")) %>%
   select(subject:STAI, lds.type:ms.diag) %>% 
   mutate(ms.diag = sqrt(ms.diag),
          lds.type = ifelse(grepl("_eyes_", lds.type), "Eyes", "Mouth/Nose") %>% as.factor(),
@@ -120,8 +120,8 @@ reg.lds.ms.sqr = data.wide %>% filter(subject %in% exclusions.eye.ms == F) %>% #
   filter(lds.type == ms.diag.type) %>% 
   mutate(ms.diag.type = ifelse(ms.diag.type=="Eyes", -1, 1)) %>% 
   mutate(lds = scale(lds), ms.diag = scale(ms.diag), SPAI = scale(SPAI), STAI = scale(STAI)) %>% #z-transform
-  lmer(lds ~ ms.diag*ms.diag.type*SPAI + (1|subject), .)
-  #lmer(lds ~ ms.diag*ms.diag.type*STAI + (1|subject), .)
+  #lmer(lds ~ ms.diag*ms.diag.type*SPAI + (1|subject), .)
+  lmer(lds ~ ms.diag*ms.diag.type*STAI + (1|subject), .)
   #lmer(lds ~ ms.diag*ms.diag.type + (1|subject), .)
 
 reg.lds.ms.sqr %>% summary() %>% print()
@@ -129,11 +129,11 @@ reg.lds.ms.sqr %>% lmer.ci()
 #reg.lds.ms.sqr %>% lmer.ci(twotailed = F)
 
 #ms.diag main effect
-data.wide %>% with(cor.test(Gen_all_lds, Gen_all_ms.diag, alternative="less")) %>% correlation_out()  #apa::cor_apa(r_ci=T)
+data.wide %>% with(cor.test(Gen_all_lds, Gen_all_ms, alternative="less")) %>% correlation_out()  #apa::cor_apa(r_ci=T)
 
 print(correl.ms.plot <- data.wide %>% filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
         gather("lds.type", "lds", c("Gen_eyes_lds", "Gen_mn_lds")) %>% 
-        gather("ms.diag.type", "ms.diag", c("Gen_eyes_ms.diag", "Gen_mn_ms.diag")) %>%
+        gather("ms.diag.type", "ms.diag", c("Gen_eyes_ms", "Gen_mn_ms")) %>%
         select(subject:STAI, lds.type:ms.diag) %>% 
         mutate(lds.type = ifelse(grepl("_eyes_", lds.type), "Eyes", "Mouth/Nose") %>% as.factor(),
                ms.diag.type = ifelse(grepl("_eyes_", ms.diag.type), "Eyes", "Mouth/Nose") %>% as.factor()) %>% 
@@ -156,7 +156,7 @@ print(correl.ms.plot <- data.wide %>% filter(subject %in% exclusions.eye.ms == F
 #Ratings: LDS & Time to diagnostic ROI
 reg.lds.ms = data.wide %>% filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
   gather("lds.type", "lds", c("Gen_eyes_lds", "Gen_mn_lds")) %>% 
-  gather("ms.diag.type", "ms.diag", c("Gen_eyes_ms.diag", "Gen_mn_ms.diag")) %>%
+  gather("ms.diag.type", "ms.diag", c("Gen_eyes_ms", "Gen_mn_ms")) %>%
   select(subject:STAI, lds.type:ms.diag) %>% 
   mutate(lds.type = ifelse(grepl("_eyes_", lds.type), "Eyes", "Mouth/Nose") %>% as.factor(),
          ms.diag.type = ifelse(grepl("_eyes_", ms.diag.type), "Eyes", "Mouth/Nose") %>% as.factor()) %>% 
@@ -173,7 +173,7 @@ reg.lds.ms %>% lmer.ci()
 
 data.wide %>% filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
   gather("lds.type", "lds", c("Gen_eyes_lds", "Gen_mn_lds")) %>% 
-  gather("ms.diag.type", "ms.diag", c("Gen_eyes_ms.diag", "Gen_mn_ms.diag")) %>%
+  gather("ms.diag.type", "ms.diag", c("Gen_eyes_ms", "Gen_mn_ms")) %>%
   select(subject:STAI, lds.type:ms.diag) %>% 
   mutate(lds.type = ifelse(grepl("_eyes_", lds.type), "Eyes", "Mouth/Nose") %>% as.factor(),
          ms.diag.type = ifelse(grepl("_eyes_", ms.diag.type), "Eyes", "Mouth/Nose") %>% as.factor()) %>% 
@@ -270,11 +270,10 @@ heart.dwell = data.wide %>% filter(subject %in% exclusions.eye.dwell == F) %>% #
   filter(lds.type == dwell.type) %>% 
   mutate(dwell.type.dummy = ifelse(dwell.type=="Eyes", -1, 1)) %>% 
   mutate(lds.z = scale(lds), dwell.z = scale(dwell), SPAI.z = scale(SPAI), STAI.z = scale(STAI)) #z-transform
-
 reg.heart.dwell = heart.dwell %>% 
-  lmer(lds.z ~ dwell.z*dwell.type.dummy*SPAI.z + (1|subject), .)
+  #lmer(lds.z ~ dwell.z*dwell.type.dummy*SPAI.z + (1|subject), .)
   #lmer(lds.z ~ dwell.z*dwell.type.dummy*STAI.z + (1|subject), .)
-  #lmer(lds.z ~ dwell.z*dwell.type.dummy + (1|subject), .)
+  lmer(lds.z ~ dwell.z*dwell.type.dummy + (1|subject), .)
 
 reg.heart.dwell %>% summary()
 reg.heart.dwell %>% lmer.ci() 
@@ -335,7 +334,7 @@ heart.dwell %>% ggplot(aes(x=SPAI, y=lds, color=dwell.type, fill=dwell.type, sha
 #Heartrate: LDS & Square Root of Time to diagnostic ROI
 heart.ms = data.wide %>% filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
   gather("lds.type", "lds", c("HR_Gen_eyes_lds", "HR_Gen_mn_lds")) %>% 
-  gather("ms.diag.type", "ms.diag", c("Gen_eyes_ms.diag", "Gen_mn_ms.diag")) %>%
+  gather("ms.diag.type", "ms.diag", c("Gen_eyes_ms", "Gen_mn_ms")) %>%
   select(subject:STAI, lds.type:ms.diag) %>% 
   mutate(ms.diag = sqrt(ms.diag),
          lds.type = ifelse(grepl("_eyes_", lds.type), "Eyes", "Mouth/Nose") %>% as.factor(),
@@ -356,7 +355,7 @@ reg.heart.ms %>% lmer.ci()
 SDs = -2:2
 spai.descr = with(questionnaires, data.frame(SPAI=mean(SPAI)+sd(SPAI)*SDs, SPAI.z=SDs))
 reg.heart.ms.spaiSD.predict = spai.descr %>%
-  expand.grid.df(data.frame(ms.diag=unique(data.wide$Gen_all_ms.diag %>% na.omit() %>% sqrt())) %>% mutate(ms.diag.z=scale(ms.diag))) %>%
+  expand.grid.df(data.frame(ms.diag=unique(data.wide$Gen_all_ms %>% na.omit() %>% sqrt())) %>% mutate(ms.diag.z=scale(ms.diag))) %>%
   expand.grid.df(data.frame(subject=0, ms.diag.type=0)) %>% #include mockup subject for population-level prediction (could avoid this and add "re.form=NA" to predict but less flexibility with additional subject-level predictions or based on non-lmer model objects, i.e. predict.merMod)
   mutate(lds = predict(reg.heart.ms, newdata=., allow.new.levels=T)) #predict values from dwell time & z-scaled SPAI
 
@@ -374,7 +373,7 @@ print(reg.ms.hr.spai.plot <- heart.ms %>% group_by(subject) %>%
 #SPAI x ms.diag.type (n.s. in dwell analysis despite same dummy variable -> suppressed/enhanced by other predictors)
 print(data.wide %>% filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
         gather("lds.type", "lds", c("HR_Gen_eyes_lds", "HR_Gen_mn_lds")) %>%
-        gather("ms.diag.type", "ms.diag", c("Gen_eyes_ms.diag", "Gen_mn_ms.diag")) %>%
+        gather("ms.diag.type", "ms.diag", c("Gen_eyes_ms", "Gen_mn_ms")) %>%
         select(subject:STAI, lds.type:ms.diag) %>% 
         mutate(lds.type = ifelse(grepl("_eyes_", lds.type), "Eyes", "Mouth/Nose") %>% as.factor(),
                ms.diag.type = ifelse(grepl("_eyes_", ms.diag.type), "Eyes", "Mouth/Nose") %>% as.factor()) %>%
@@ -432,7 +431,7 @@ data.wide %>% gather("lds.type", "lds", c("EDA_Gen_eyes_lds", "EDA_Gen_mn_lds"))
 
 #EDA: LDS & Time to diagnostic ROI
 reg.eda.ms = data.wide %>% gather("lds.type", "lds", c("EDA_Gen_eyes_lds", "EDA_Gen_mn_lds")) %>% 
-  gather("ms.diag.type", "ms.diag", c("Gen_eyes_ms.diag", "Gen_mn_ms.diag")) %>%
+  gather("ms.diag.type", "ms.diag", c("Gen_eyes_ms", "Gen_mn_ms")) %>%
   select(subject:STAI, lds.type:ms.diag) %>% 
   mutate(ms.diag = sqrt(ms.diag),
          lds.type = ifelse(grepl("_eyes_", lds.type), "Eyes", "Mouth/Nose") %>% as.factor(),
@@ -450,7 +449,7 @@ reg.eda.ms %>% lmer.ci()
 reg.eda.ms %>% lmer.ci(twotailed = F)
 
 data.wide %>% gather("lds.type", "lds", c("EDA_Gen_eyes_lds", "EDA_Gen_mn_lds")) %>% 
-  gather("ms.diag.type", "ms.diag", c("Gen_eyes_ms.diag", "Gen_mn_ms.diag")) %>%
+  gather("ms.diag.type", "ms.diag", c("Gen_eyes_ms", "Gen_mn_ms")) %>%
   select(lds.type:ms.diag) %>% 
   mutate(lds.type = ifelse(grepl("_eyes_", lds.type), "Eyes", "Mouth/Nose") %>% as.factor(),
          ms.diag.type = ifelse(grepl("_eyes_", ms.diag.type), "Eyes", "Mouth/Nose") %>% as.factor()) %>% 
