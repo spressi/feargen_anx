@@ -47,12 +47,14 @@ pupil.diff = pupil %>% pivot_wider(names_from = threat, values_from = mmChange, 
   na.omit() %>% mutate(threat = threat %>% gsub("diff.", "", .)) %>% 
   merge(pupil, ., by=c("subject", "phase", "time", "threat"), all.x=T)
 
+pupil.diff$phase <- factor(pupil.diff$phase, levels = c("Hab", "Acq", "Gen"))
 pupil.diff %>% #filter(time <= 4) %>%
   group_by(phase, threat, time) %>% 
   summarise(mmChange.se = se(mmChange, na.rm=T), mmChange = mean(mmChange, na.rm=T), 
             diff.se = se(diff, na.rm=T), diff = mean(diff, na.rm=T)) %>% 
   ggplot(aes(x=time, y=mmChange, color=threat, group=threat)) + 
-  facet_wrap(vars(phase)) +
+  facet_wrap(~phase) +
+  #facet_wrap(vars(phase)) +
   #geom_ribbon(aes(ymin=mmChange-mmChange.se*1.96, ymax=mmChange+mmChange.se*1.96, fill=threat), color=NA, alpha=.1) + #replace 1.96 with qnorm(.975)?
   geom_ribbon(aes(ymin=mmChange-diff.se*1.96, ymax=mmChange+diff.se*1.96, fill=threat), color=NA, alpha=.1) + #within-CIs relative to CS-
   #geom_ribbon(aes(ymin=mmChange-diff, ymax=mmChange+diff, fill=threat), color=NA, alpha=.1) + #sanity check of within-CI calculation (CI should exactly touch reference wave)
@@ -80,6 +82,7 @@ pupil.diff %>% #filter(time <= 4) %>%
 pupil.diag = pupil.avg %>% bind_rows(.id="subject") %>% mutate(time = signal$time, mmChange = signal$mmChange) %>% select(-signal) %>% 
   group_by(phase, diagnostic, threat, time) %>% summarise(mmChange.se = se(mmChange, na.rm=T), 
                                                           mmChange = mean(mmChange, na.rm=T))
+pupil.diag$phase <- factor(pupil.diag$phase, levels = c("Hab", "Acq", "Gen"))
 pupil.diag %>% ggplot(aes(x=time, y=mmChange, color=threat, group=threat)) + 
   facet_grid(rows=vars(diagnostic), cols=vars(phase)) +
   geom_ribbon(aes(ymin=mmChange-mmChange.se*1.96, ymax=mmChange+mmChange.se*1.96, fill=threat), color=NA, alpha=.1) +
