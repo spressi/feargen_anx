@@ -152,6 +152,48 @@ print(correl.ms.plot <- data.wide %>% filter(subject %in% exclusions.eye.ms == F
           #legend.position = c(.5, 1-.87))
 )
 
+# #Ratings: Level & Square Root of Time to diagnostic ROI
+# reg.level.ms.sqr = data.wide %>% filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
+#   gather("level.type", "level", c("Gen_eyes_level", "Gen_mn_level")) %>% 
+#   gather("ms.diag.type", "ms.diag", c("Gen_eyes_ms", "Gen_mn_ms")) %>%
+#   select(subject:STAI, level.type:ms.diag) %>% 
+#   mutate(ms.diag = sqrt(ms.diag),
+#          level.type = ifelse(grepl("_eyes_", level.type), "Eyes", "Mouth/Nose") %>% as.factor(),
+#          ms.diag.type = ifelse(grepl("_eyes_", ms.diag.type), "Eyes", "Mouth/Nose") %>% as.factor()) %>% 
+#   filter(level.type == ms.diag.type) %>% 
+#   mutate(ms.diag.type = ifelse(ms.diag.type=="Eyes", -1, 1)) %>% 
+#   mutate(level = scale(level), ms.diag = scale(ms.diag), SPAI = scale(SPAI), STAI = scale(STAI)) %>% #z-transform
+#   #lmer(level ~ ms.diag*ms.diag.type*SPAI + (1|subject), .)
+#   lmer(level ~ ms.diag*ms.diag.type*STAI + (1|subject), .)
+# #lmer(lds ~ ms.diag*ms.diag.type + (1|subject), .)
+# 
+# reg.level.ms.sqr %>% summary() %>% print()
+# reg.level.ms.sqr %>% lmer.ci() 
+# #reg.lds.ms.sqr %>% lmer.ci(twotailed = F)
+# 
+# #ms.diag main effect
+# data.wide %>% with(cor.test(Gen_all_level, Gen_all_ms, alternative="less")) %>% correlation_out()  #apa::cor_apa(r_ci=T)
+# 
+# print(correl.level.ms.plot <- data.wide %>% filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
+#         gather("level.type", "level", c("Gen_eyes_level", "Gen_mn_level")) %>% 
+#         gather("ms.diag.type", "ms.diag", c("Gen_eyes_ms", "Gen_mn_ms")) %>%
+#         select(subject:STAI, level.type:ms.diag) %>% 
+#         mutate(level.type = ifelse(grepl("_eyes_", level.type), "Eyes", "Mouth/Nose") %>% as.factor(),
+#                ms.diag.type = ifelse(grepl("_eyes_", ms.diag.type), "Eyes", "Mouth/Nose") %>% as.factor()) %>% 
+#         filter(level.type == ms.diag.type) %>% 
+#         ggplot(aes(x=sqrt(ms.diag), y=level, color=ms.diag.type, fill=ms.diag.type, shape=ms.diag.type)) +
+#         geom_smooth(method="lm", size=1.5, alpha = .2) +
+#         #stat_smooth(method="lm", size=1.5, alpha = .2, fullrange = T) +
+#         geom_point(size=4, alpha=.8) + 
+#         ylab("Ratings Level") + xlab(expression("Time to Diagnostic ROI (" * sqrt(ms) * ")")) + labs(color="Diagnostic", fill="Diagnostic", shape="Diagnostic") +
+#         scale_shape_manual(values=c(16, 15)) +
+#         myGgTheme +
+#         theme(
+#           #aspect.ratio = 1,
+#           #legend.position = "none",
+#           legend.position = c(.87, 1-.87))
+#       #legend.position = c(.5, 1-.87))
+# )
 
 #Ratings: LDS & Time to diagnostic ROI
 reg.lds.ms = data.wide %>% filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
