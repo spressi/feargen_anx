@@ -14,9 +14,9 @@ data.wide = full_join(questionnaires, ratings.wide, by="subject") %>%
   full_join(heart.wide, by="subject") %>% 
   full_join(eda.wide, by="subject")
 
-# data.wide.first.half = full_join(questionnaires, ratings.first.wide, by="subject") %>% 
-#   full_join(eyes.wide, by="subject") %>% 
-#   full_join(heart.wide, by="subject") #%>% 
+# data.wide.first.half = full_join(questionnaires, ratings.first.wide, by="subject") %>%
+#   full_join(eyes.wide, by= c("subject", "SPAI", "STAI")) %>%
+#   full_join(heart.wide, by="subject") #%>%
 # #full_join(eda.wide, by="subject")
 
 #write_rds(data.wide, "data.wide.rds" %>% paste0(path.rds, .))
@@ -43,30 +43,30 @@ data.wide %>% summarise(M = mean(Gen_all_lds, na.rm = TRUE),
                         SD = sd(Gen_all_lds, na.rm = TRUE)) %>% tibble()
 
 # Correlation LDS & SPAI/STAI
-data.wide %>% with(cor.test(Gen_all_lds, SPAI, alternative="greater")) %>% correlation_out()  #apa::cor_apa(r_ci=T)
-data.wide %>% with(cor.test(Gen_all_lds, STAI, alternative="greater")) %>% correlation_out()
+data.wide %>% with(cor.test(Gen_all_lds, SPAI, alternative="less")) %>% correlation_out()  #apa::cor_apa(r_ci=T)
+data.wide %>% with(cor.test(Gen_all_lds, STAI, alternative="less")) %>% correlation_out()
 
 # Correlation Diff & SPAI/STAI
-data.wide %>% with(cor.test(Gen_all_diff, SPAI, alternative="greater")) %>% correlation_out()  #apa::cor_apa(r_ci=T)
-data.wide %>% with(cor.test(Gen_all_diff, STAI, alternative="greater")) %>% correlation_out()
+data.wide %>% with(cor.test(Gen_all_diff, SPAI, alternative="less")) %>% correlation_out()  #apa::cor_apa(r_ci=T)
+data.wide %>% with(cor.test(Gen_all_diff, STAI, alternative="less")) %>% correlation_out()
 
 # Correlation Level & SPAI/STAI
 data.wide %>% with(cor.test(Gen_all_level, SPAI, alternative="greater")) %>% correlation_out()  #apa::cor_apa(r_ci=T)
 data.wide %>% with(cor.test(Gen_all_level, STAI, alternative="greater")) %>% correlation_out()
 
-# # Significance of gradients for first half -----------------------------------------------
+# #Significance of gradients for first half -----------------------------------------------
 # data.wide.first.half %>% pull(Gen_all_lds) %>% t.test(mu = 0, alternative="greater") %>% apa::t_apa(es_ci=T)
 # #gradients %>% pull(Gen_all_lds) %>% mean() %>% signif(3) %>% paste0("M = ", .)
 # data.wide.first.half %>% summarise(M = mean(Gen_all_lds, na.rm = TRUE),
 #                         SD = sd(Gen_all_lds, na.rm = TRUE)) %>% tibble()
 # 
 # # Correlation LDS & SPAI/STAI
-# data.wide.first.half %>% with(cor.test(Gen_all_lds, SPAI, alternative="greater")) %>% correlation_out()  #apa::cor_apa(r_ci=T)
-# data.wide.first.half %>% with(cor.test(Gen_all_lds, STAI, alternative="greater")) %>% correlation_out()
+# data.wide.first.half %>% with(cor.test(Gen_all_lds, SPAI, alternative="less")) %>% correlation_out()  #apa::cor_apa(r_ci=T)
+# data.wide.first.half %>% with(cor.test(Gen_all_lds, STAI, alternative="less")) %>% correlation_out()
 # 
 # # Correlation Diff & SPAI/STAI
-# data.wide.first.half %>% with(cor.test(Gen_all_diff, SPAI, alternative="greater")) %>% correlation_out()  #apa::cor_apa(r_ci=T)
-# data.wide.first.half %>% with(cor.test(Gen_all_diff, STAI, alternative="greater")) %>% correlation_out()
+# data.wide.first.half %>% with(cor.test(Gen_all_diff, SPAI, alternative="less")) %>% correlation_out()  #apa::cor_apa(r_ci=T)
+# data.wide.first.half %>% with(cor.test(Gen_all_diff, STAI, alternative="less")) %>% correlation_out()
 # 
 # # Correlation Level & SPAI/STAI
 # data.wide.first.half %>% with(cor.test(Gen_all_level, SPAI, alternative="greater")) %>% correlation_out()  #apa::cor_apa(r_ci=T)
