@@ -164,7 +164,7 @@ ratings.ga.gen.subj = ratings.gen %>% group_by(threat, threat_num, threat_both, 
 ratings.ga.gen = ratings.ga.gen.subj %>% summarise(rating.se=se(rating, na.rm=T), rating=mean(rating, na.rm=T))
 print(ratings.gradient.plot <- ratings.ga.gen %>% ggplot(aes(x=threat_both, y=rating, color=threat, group=NA)) + 
         geom_dotplot(data=ratings.ga.gen.subj, mapping=aes(group=threat, fill=threat), binaxis="y", alpha=.25, color="black", stackratio=1, stackdir="centerwhole", dotsize=.5) +
-        #try ggbeeswarm ? or position_jitter ? or geom_quasirandom ?
+        #try ggbeeswarm ? or position_jitter ? or geom_quasirandom ? or violinplot?
         #geom_path(data=ratings.ga.gen %>% filter(threat_num %in% c(1, threatLevels.n)), color = "black", size=1.5) + #generalization line
         geom_line(size=1) + geom_point(size=4.5) + 
         geom_errorbar(aes(ymin=rating-rating.se*1.96, ymax=rating+rating.se*1.96), size=1.5) +
@@ -257,14 +257,79 @@ ez::ezANOVA(data=ratings.subject.gen.diagnostic,
             between=.(SPAI.z), observed=SPAI.z,
             #between=.(STAI.z), observed=STAI.z,
             detailed=T, type=2) %>% apa::anova_apa(force_sph_corr=T)
-# TODO interactions with block :)
 
-# # ANOVA First Generalization Phase
-# ratings.subject.first.gen.diagnostic = ratings.first.gen %>% group_by(subject, SPAI, SPAI.z, STAI, STAI.z, threat, diagnostic, pairs) %>% 
+# Block Main Effect
+
+ratings.subject.gen.diagnostic %>% 
+  ungroup() %>%
+  group_by(block)%>%
+  summarise(mean = mean(rating.m),
+            sd = sd(rating.m))
+
+# Block x Threat Interaction
+ratings.subject.gen.diagnostic %>% 
+  ungroup() %>%
+  group_by(block, threat)%>%
+  summarise(mean = mean(rating.m),
+            sd = sd(rating.m))
+
+ratings.gen.threat.block <- ratings.subject.gen.diagnostic %>% 
+  ungroup() %>%
+  group_by(block, threat)%>%
+  summarise(mean = mean(rating.m),
+            se = se(rating.m))
+
+ratings.gen.threat.block$block <- as.character(ratings.gen.threat.block$block)
+print(ratings.gradient.plot.blocks <- ratings.gen.threat.block %>% 
+        ggplot(aes(x=threat, y=mean, color=block, group=block)) + 
+        #try ggbeeswarm ? or position_jitter ? or geom_quasirandom ? or violinplot?
+        #geom_path(data=ratings.ga.gen %>% filter(threat_num %in% c(1, threatLevels.n)), color = "black", size=1.5) + #generalization line
+        geom_line(size=1) + geom_point(size=4.5) + 
+        geom_errorbar(aes(ymin=mean-se*1.96, ymax=mean+se*1.96), size=1.5) +
+        #scale_color_manual(values=colors, guide=guide_legend(reverse=T)) +
+        scale_colour_discrete(name = "Block", labels = c("first half", "second half"))+
+        ylab("Threat Rating (1-5)") + xlab("Threat") + labs(color="Block", fill="Block") +
+        myGgTheme + theme(legend.position="right"))
+
+# Block x Threat x Diagnostic Interaction
+
+ratings.subject.gen.diagnostic %>% 
+  ungroup() %>%
+  group_by(block, threat, diagnostic)%>%
+  summarise(mean = mean(rating.m),
+            sd = sd(rating.m))
+
+ratings.gen.diagnostic.block <- ratings.subject.gen.diagnostic %>% 
+  ungroup() %>%
+  group_by(block, threat, diagnostic)%>%
+  summarise(mean = mean(rating.m),
+            se = se(rating.m)) %>%
+  mutate(
+    group = case_when(block == 2 & diagnostic == "Eyes" ~ 1,
+                      block == 2 & diagnostic == "Mouth/Nose" ~ 2,
+                      block == 3 & diagnostic == "Eyes" ~ 3,
+                      block == 3 & diagnostic == "Mouth/Nose" ~ 4))
+
+ratings.gen.diagnostic.block$block <- as.character(ratings.gen.diagnostic.block$block)
+ratings.gen.diagnostic.block$group <- as.character(ratings.gen.diagnostic.block$group)
+print(ratings.gradient.plot.blocks <- ratings.gen.diagnostic.block %>% 
+        ggplot(aes(x=threat, y=mean, color=group , group=group)) + 
+        #try ggbeeswarm ? or position_jitter ? or geom_quasirandom ? or violinplot?
+        #geom_path(data=ratings.ga.gen %>% filter(threat_num %in% c(1, threatLevels.n)), color = "black", size=1.5) + #generalization line
+        geom_line(size=1) + geom_point(size=4.5) + 
+        geom_errorbar(aes(ymin=mean-se*1.96, ymax=mean+se*1.96), size=1.5) +
+        #scale_color_manual(values=colors, guide=guide_legend(reverse=T)) +
+        scale_colour_discrete(name = "Block & Diagnostic Region", labels = c("first eyes", "first mouth/nose", "second eyes", "second mouth/nose"))+
+        ylab("Threat Rating (1-5)") + xlab("Threat") + #labs(color="Block", fill="Block") +
+        myGgTheme + theme(legend.position="right"))
+
+
+# ANOVA First Generalization Phase
+# ratings.subject.first.gen.diagnostic = ratings.first.gen %>% group_by(subject, SPAI, SPAI.z, STAI, STAI.z, threat, diagnostic, pairs) %>%
 #   summarise(rating.m=mean(rating, na.rm=T), rating.se=se(rating, na.rm=T))
-# ez::ezANOVA(data=ratings.subject.first.gen.diagnostic, 
-#             dv=.(rating.m), wid=.(subject), 
-#             within=.(threat, diagnostic), 
+# ez::ezANOVA(data=ratings.subject.first.gen.diagnostic,
+#             dv=.(rating.m), wid=.(subject),
+#             within=.(threat, diagnostic),
 #             #between=.(pairs),
 #             between=.(SPAI.z), observed=SPAI.z,
 #             #between=.(STAI.z), observed=STAI.z,
@@ -410,7 +475,9 @@ gradients = full_join(gradients.simple, gradients.diagnostic, by="subject")
 # }
 # names(gradients.diagnostic.first.half) = c("lds", "diff", "level") %>% {c("subject", paste0("Gen_eyes_", .), paste0("Gen_mn_", .))}
 # 
+# gradients.diagnostic.first.half$subject <- as.character(gradients.diagnostic.first.half$subject)
 # gradients.first.half = full_join(gradients.simple.first.half, gradients.diagnostic.first.half, by="subject")
+# gradients.first.half$subject <- as.numeric(gradients.first.half$subject)
 
 # Wide format for correlations ----------------------------------------------------
 #all phases except generalization
@@ -424,17 +491,21 @@ ratings.wide.threat = ratings.subject.gen %>% select(-rating.se, -threat_num) %>
 names(ratings.wide.threat) = c("subject", "Gen_all_CS-", paste0("Gen_all_GS", 1:4), "Gen_all_CS+")
 ratings.wide = full_join(ratings.wide, ratings.wide.threat, by="subject")
 
-# #ratings in first half of generalization 
+# #ratings in first half of generalization
 # ratings.wide.first.threat = ratings.subject.first.gen %>% select(-rating.se, -threat_num) %>% spread(threat, rating.m)
 # names(ratings.wide.first.threat) = c("subject", "Gen_all_CS-", paste0("Gen_all_GS", 1:4), "Gen_all_CS+")
 # ratings.first.wide = full_join(ratings.wide, ratings.wide.first.threat, by="subject")
+# 
+# #gradients first half
+# ratings.first.wide = full_join(ratings.wide, gradients.first.half, by="subject") %>% 
+#   select("subject", contains("Hab"), contains("Acq"), contains("Gen"), everything()) %>% tibble()
 
 #gradients
 ratings.wide = full_join(ratings.wide, gradients, by="subject") %>% 
   select("subject", contains("Hab"), contains("Acq"), contains("Gen"), everything()) %>% tibble()
 
 # #gradients first half
-# ratings.first.wide = full_join(ratings.first.wide, gradients.first.half, by="subject") %>% 
+# ratings.first.wide = full_join(ratings.first.wide, gradients.first.half, by="subject") %>%
 #   select("subject", contains("Hab"), contains("Acq"), contains("Gen"), everything()) %>% tibble()
 
 #write_rds(ratings.wide, "ratings.wide.rds" %>% paste0(path.rds, .))
