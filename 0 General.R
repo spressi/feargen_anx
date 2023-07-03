@@ -264,5 +264,5 @@ questionnaires %>%
 #questionnaires %>% filter(problem==T)
 #exclusions = exclusions %>% c(questionnaires %>% filter(problem==T) %>% .$subject) #rather don't exclude (deviation from preregistration)
 
-#spai.width = questionnaires %>% select(SPAI, STAI) %>% summarise(across(.fns = function(x) {max(x) - min(x)})) %>% transmute(width = SPAI/STAI) %>% pull(width) #close to .1
+#questionnaires %>% select(SPAI, STAI) %>% summarise(across(.fns = function(x) {max(x) - min(x)})) %>% mutate(width = SPAI/STAI) #=> round spai.width to .1 (see above)
 
