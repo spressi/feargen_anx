@@ -101,7 +101,7 @@ ratings.all = ratings.list %>% bind_rows() %>% separate(subject, c("subject", "b
          threat_both = paste0(threat_num, ": ", threat) %>% as.factor(),
          phase = case_when(trial < preAcqEnd ~ "Hab",
                            trial <    acqEnd ~ "Acq",
-                           TRUE ~              "Gen"),
+                           TRUE ~              "Gen") %>% factor(levels=c("Hab", "Acq", "Gen")),
          diagnostic = as.factor(ifelse(pair %% 2 == 0, "Mouth/Nose", "Eyes")),
          sex = as.factor(ifelse(pair > 2, "female", "male")),
          pairs = ifelse(pair %in% 2:3, 2, 1),
@@ -132,7 +132,10 @@ conditions.csp %>% filter((subject %in% exclusions) == F) %>% #all subjects with
   transmute(condition = paste0(pairs, csp1, csp2)) %>% table() #condition combinations
 
 ratings.valid = ratings %>% group_by(subject, phase) %>% summarise(NAs = rating %>% is.na() %>% sum() / n()) %>% arrange(desc(NAs))
-hist(ratings.valid$NAs); abline(v=outlierLimit.ratings, col="red", lwd=3, lty=2) #, breaks=seq(0, outlierLimit.ratings, length.out=20+1))
+#hist(ratings.valid$NAs); abline(v=outlierLimit.ratings, col="red", lwd=3, lty=2) #, breaks=seq(0, outlierLimit.ratings, length.out=20+1))
+ratings.valid %>%
+  ggplot(aes(x=NAs, fill=phase)) + geom_histogram(boundary=outlierLimit.ratings, color="black") + 
+  geom_vline(xintercept=outlierLimit.ratings, color="red") + myGgTheme + scale_y_continuous(breaks=scales::breaks_pretty())
 #ratings.valid %>% arrange(desc(NAs))
 print(problem <- ratings %>% group_by(subject, phase) %>% summarise(NAs = rating %>% is.na() %>% sum() / n()) %>% arrange(desc(NAs)) %>% filter(NAs > outlierLimit.ratings))
 
