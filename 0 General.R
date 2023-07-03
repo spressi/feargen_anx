@@ -258,7 +258,7 @@ paste0("subjects meeting the cut-off: ", {mean(questionnaires$SPAI >= spai.cutof
        "z = ", with(questionnaires, (spai.cutoff - mean(SPAI)) / sd(SPAI)) %>% round(digits=2), ")")
 
 questionnaires %>%
-  ggplot(aes(x=SPAI)) + geom_histogram(binwidth=.25, boundary=spai.cutoff, color="black") + 
+  ggplot(aes(x=SPAI)) + geom_histogram(binwidth=.25, boundary=spai.cutoff, color="black", fill="grey") + 
   geom_vline(xintercept=spai.cutoff, color="red") + myGgTheme + scale_y_continuous(breaks=scales::breaks_pretty())
 
 #questionnaires %>% filter(problem==T)
