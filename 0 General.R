@@ -247,7 +247,7 @@ questionnaires = suppressMessages( #avoid name repair message (affected columns 
   mutate(subject = subject %>% gsub("vp", "", ., fixed=T) %>% as.integer(),
          SPAI = SPAI / 22, #German SPAI version: mean item scores, not sum scores (for comparison with cut-off values)
          discr = Screening_nachher - Screening_vorher,
-         problem = abs(discr) > 1.5, problem = ifelse(problem %>% is.na(), F, problem)) %>% #preregistration
+         problem = abs(discr) > 1.5, problem = ifelse(problem %>% is.na(), F, problem)) %>% 
   filter(subject %>% is.na() == F, subject > 0, #get rid of test subject & empty rows
          subject %in% exclusions == F) #apply a priori exclusions
 
@@ -262,7 +262,7 @@ questionnaires %>%
   geom_vline(xintercept=spai.cutoff, color="red") + myGgTheme + scale_y_continuous(breaks=scales::breaks_pretty())
 
 #questionnaires %>% filter(problem==T)
-#exclusions = exclusions %>% c(questionnaires %>% filter(problem==T) %>% .$subject) #rather don't exclude (deviation from preregistration)
+#exclusions = exclusions %>% c(questionnaires %>% filter(problem==T) %>% .$subject) #rather don't exclude because if subjects were "lying", assume it was during sreening
 
 #questionnaires %>% select(SPAI, STAI) %>% summarise(across(.fns = function(x) {max(x) - min(x)})) %>% mutate(width = SPAI/STAI) #=> round spai.width to .1 (see above)
 
