@@ -93,9 +93,11 @@ path.rpeaks.postfix = "_rpeaks.csv"
     sd(x, na.rm) / sqrt(if(!na.rm) length(x) else sum(!is.na(x)))
   }
   
-  correlation_out = function(coroutput) {
+  correlation_out = function(coroutput, returnString=F) {
     names = coroutput$data.name %>% strsplit(" and ") %>% unlist()
-    cat(paste0("r(", names[1], ", ", names[2], "): ", coroutput %>% apa::cor_apa(print=F)), "\n")
+    output = paste0("r(", names[1], ", ", names[2], "): ", coroutput %>% apa::cor_apa(print=F))
+    if (returnString) return(output)
+    cat(output, "\n")
   }
   
   F_apa = function(x) {
