@@ -3,6 +3,7 @@ if(!require(tidyverse)) install.packages("tidyverse"); library(tidyverse)
 
 requirePackage("ggforce", load=F) #for drawing circles
 requirePackage("png") #for reading png
+requirePackage("DescTools")
 #requirePackage("raster", load=F) #used to be needed for checkPlot=T
 
 { # Global Parameters -------------------------------------------------------
@@ -13,9 +14,9 @@ requirePackage("png") #for reading png
   #baseline validation
   baseline = c(-300, 0) #Baseline in ms relative to stimulus onset; min(baseline) = start; max(baseline) = end
   useAllBaselines = list("83" = 2, "84" = 3) #manually allow all baselines of vp83 phase 2 (Gen1) & vp84 phase 3 (Gen2)
-  saveBaselinePlots = T
+  saveBaselinePlots = F
   driftPlots = T #c("vp30", "vp33")
-  maxDeviation_rel = 3 #|z| score
+  maxDeviation_rel = 3 #max abs value of z-score
   outlierLimit.eye = .5 #maximum percentage of invalid baselines per subject
   maxSpread = 150 #maximum spread of valid baselines (diameter / edge length)
   usePointDistance = T #use point (vector) distance instead of coordinates independently?
@@ -32,6 +33,10 @@ requirePackage("png") #for reading png
   wsx <- 1920 ; wsy <- 1080 #screen resolution (24" ASUS VG248QE)
   pixsize <- 0.27675  # Pixel size in mm
   distance <- 560 # Distance Camera - Eye 560 mm (chin rest with remote tracking)
+  
+  #statistical analysis
+  z.max = 2 #winsorize dependent variables to a z value of 2
+  q.max = pnorm(z.max * c(-1, 1)) #needed for DescTools::Winsorize function
 }
 
 { # Functions ---------------------------------------------------------------
@@ -724,7 +729,7 @@ print(eye.invalid.dwell <- eye %>% group_by(subject) %>% summarise(nBad = sum(dw
 vpn.eye = vpn.eye %>% setdiff(eye.invalid.dwell)
 eye = eye %>% filter(subject %in% vpn.eye) %>% merge(questionnaires, by="subject", all.x=T) %>% tibble()
 
-#write_rds(eye, "eye.rds" %>% paste0(path.rds, .))
+#eye %>% write_rds("eye.rds" %>% paste0(path.rds, .))
 
 # Prepare data for analyses -----------------------------------------------
 #eye = read_rds("eye.rds" %>% paste0(path.rds, .))
@@ -788,27 +793,48 @@ eye.diagnosticity.ms = eye %>% filter(phase=="Gen") %>% select(-contains("bin"))
          Diagnosticity = ifelse(as.numeric(ROI)==as.numeric(diagnostic), "Diagnostic", "Non-Diagnostic"))
 
 # Hypotheses Dwell --------------------------------------------------------
-#exclusions.eye.dwell = c(18, 42) #TODO don't exclude but prune subjects?
-exclusions.eye.dwell = c() #results without exclusions
+eye.diagnosticity.subj = eye.diagnosticity %>% group_by(subject, SPAI, STAI, ROI, Diagnosticity, diagnostic) %>% 
+  summarise(relDwell=mean(relDwell, na.rm=T)) %>% ungroup() %>% 
+  mutate(relDwell = relDwell*100) #improves readability of y-axis
 
-eye.diagnosticity %>% 
+# eye.diagnosticity.subj %>% mutate(relDwell.z = scale(relDwell)[,1]) %>% filter(Diagnosticity=="Non-Diagnostic", ROI=="Mouth/Nose") %>%
+#   arrange(desc(abs(relDwell.z))) 
+eye.diagnosticity.subj %>% mutate(relDwell.z = scale(relDwell)[,1]) %>% filter(Diagnosticity=="Non-Diagnostic") %>% 
+  arrange(desc(abs(relDwell.z))) #problems: subject 18, 64
+
+#exclusions.eye.dwell = c(18, 64) #don't exclude but prune subjects?
+exclusions.eye.dwell = c() #results without exclusions (will be handled by pruning)
+
+eye.diagnosticity.analysis = eye.diagnosticity.subj %>% 
+  mutate(relDwell = relDwell %>% DescTools::Winsorize(probs = q.max)) #Winsorize
+#eye.diagnosticity.analysis %>% mutate(relDwell.z = scale(relDwell)[,1]) %>% filter(Diagnosticity=="Non-Diagnostic") %>% arrange(desc(abs(relDwell.z)))
+
+#eye.diagnosticity %>% #still has trial-level data in it (could calculate an LMM instead)
+eye.diagnosticity.analysis %>% 
   filter(subject %in% exclusions.eye.dwell == F) %>% #manual exclusion because of extreme dwell
-  #mutate(SPAI = scale(SPAI), STAI = scale(STAI)) %>% #no effect - done implicitly?
+  #mutate(SPAI = scale(SPAI), STAI = scale(STAI)[,1]) %>% #no effect - done implicitly?
   ez::ezANOVA(dv=.(relDwell), wid=.(subject),
-              within=.(ROI, Diagnosticity), within_full=.(threat),
+              within=.(ROI, Diagnosticity), #within_full=.(threat),
               #within=.(threat, ROI, Diagnosticity),
-              #between=.(SPAI), observed=SPAI,
+              between=.(SPAI), observed=SPAI,
+              detailed=T, type=2) %>% apa::anova_apa(force_sph_corr=T)
+
+eye.diagnosticity.analysis %>% 
+  filter(subject %in% exclusions.eye.dwell == F) %>% #manual exclusion because of extreme dwell
+  #mutate(SPAI = scale(SPAI), STAI = scale(STAI)[,1]) %>% #no effect - done implicitly?
+  ez::ezANOVA(dv=.(relDwell), wid=.(subject),
+              within=.(ROI, Diagnosticity), #within_full=.(threat),
+              #within=.(threat, ROI, Diagnosticity),
               between=.(STAI), observed=STAI,
               detailed=T, type=2) %>% apa::anova_apa(force_sph_corr=T)
 
-eye.diagnosticity.subj = eye.diagnosticity %>% group_by(diagnostic, Diagnosticity, ROI, subject) %>% summarise(relDwell=mean(relDwell, na.rm=T)) %>% 
-  mutate(relDwell = relDwell*100) #improves readability of y-axis
-eye.diagnosticity.subj.analysis = eye.diagnosticity.subj  %>% filter(subject %in% exclusions.eye.dwell == F) #manual exclusion because of extreme dwell
-print(eye.main <- eye.diagnosticity.subj.analysis %>% summarise(relDwell.se=se(relDwell, na.rm=T), relDwell=mean(relDwell, na.rm=T)) %>% 
+#main eye figure from Reutter & Gamer (2022)
+#eye.diagnosticity.analysis = eye.diagnosticity.subj  %>% filter(subject %in% exclusions.eye.dwell == F) #manual exclusion because of extreme dwell
+print(eye.main <- eye.diagnosticity.analysis %>% group_by(ROI, Diagnosticity, diagnostic) %>% summarise(relDwell.se = se(relDwell, na.rm=T), relDwell = mean(relDwell)) %>% 
         ggplot(aes(x=diagnostic, y=relDwell, color=ROI, shape=Diagnosticity)) + 
         #ggplot(aes(x=diagnostic, y=relDwell, color=as.numeric(ROI)==as.numeric(diagnostic))) + 
-        geom_dotplot(data=eye.diagnosticity.subj.analysis %>% filter(ROI=="Eyes"), mapping=aes(group=interaction(ROI, diagnostic), fill=ROI), stackdir="down", binaxis="y", alpha=.25, color="black", stackratio=1, dotsize=.75) +
-        geom_dotplot(data=eye.diagnosticity.subj.analysis %>% filter(ROI!="Eyes"), mapping=aes(group=interaction(ROI, diagnostic), fill=ROI), stackdir="up", binaxis="y", alpha=.25, color="black", stackratio=1, dotsize=.75) +
+        geom_dotplot(data=eye.diagnosticity.analysis %>% filter(ROI=="Eyes"), mapping=aes(group=interaction(ROI, diagnostic), fill=ROI), stackdir="down", binaxis="y", alpha=.25, color="black", stackratio=1, dotsize=.75) +
+        geom_dotplot(data=eye.diagnosticity.analysis %>% filter(ROI!="Eyes"), mapping=aes(group=interaction(ROI, diagnostic), fill=ROI), stackdir="up", binaxis="y", alpha=.25, color="black", stackratio=1, dotsize=.75) +
         geom_point(size=6, position=dodge) + geom_errorbar(aes(ymin=relDwell-relDwell.se*1.96, ymax=relDwell+relDwell.se*1.96), size=2, position=dodge) +
         #scale_x_discrete(labels=c("Eyes", "Mouth/Nose")) +
         scale_color_discrete(labels=c("Eyes", "Mouth/Nose")) +
@@ -817,39 +843,6 @@ print(eye.main <- eye.diagnosticity.subj.analysis %>% summarise(relDwell.se=se(r
         ylab("Relative Dwell Time (%)") + xlab("Diagnostic Region") +
         ylim(c(0, 100)) + myGgTheme)
 
-# Figure in German 
-# eye.diagnosticity.subj.analysis <- eye.diagnosticity.subj.analysis %>%
-#   mutate(ROI =
-#            case_when(
-#              ROI == "Eyes"~ "Augen",
-#              ROI == "Mouth/Nose" ~ "Mund/Nase"
-#            )) %>%
-#   mutate(Diagnosticity =
-#            case_when(
-#              Diagnosticity == "Diagnostic" ~ "Diagnostisch",
-#              Diagnosticity == "Non-Diagnostic" ~ "Nicht-Diagnostisch"
-#            ))%>%
-#   mutate(diagnostic =
-#            case_when(
-#              diagnostic == "Eyes" ~ "Augen",
-#              diagnostic == "Mouth/Nose" ~ "Mund/Nase"
-#            ))%>%
-#   rename(Diagnostizität = Diagnosticity)
-# print(eye.main <- eye.diagnosticity.subj.analysis %>% summarise(relDwell.se=se(relDwell, na.rm=T), relDwell=mean(relDwell, na.rm=T)) %>% 
-#         ggplot(aes(x=diagnostic, y=relDwell, color=ROI, shape=Diagnostizität)) + 
-#         #ggplot(aes(x=diagnostic, y=relDwell, color=as.numeric(ROI)==as.numeric(diagnostic))) + 
-#         geom_dotplot(data=eye.diagnosticity.subj.analysis %>% filter(ROI=="Augen"), mapping=aes(group=interaction(ROI, diagnostic), fill=ROI), stackdir="down", binaxis="y", alpha=.25, color="black", stackratio=1, dotsize=.75) +
-#         geom_dotplot(data=eye.diagnosticity.subj.analysis %>% filter(ROI!="Augen"), mapping=aes(group=interaction(ROI, diagnostic), fill=ROI), stackdir="up", binaxis="y", alpha=.25, color="black", stackratio=1, dotsize=.75) +
-#         geom_point(size=6, position=dodge) + geom_errorbar(aes(ymin=relDwell-relDwell.se*1.96, ymax=relDwell+relDwell.se*1.96), size=2, position=dodge) +
-#         #scale_x_discrete(labels=c("Eyes", "Mouth/Nose")) +
-#         scale_color_discrete(labels=c("Augen", "Mund/Nase")) +
-#         #scale_color_discrete(name="Diagnosticity of ROI", labels=c("Diagnostic", "Non-Diagnostic")) +
-#         #scale_color_viridis_d(labels=c("Augen", "Mund/Nase")) +
-#         ylab("Relative Verweildauer (%)") + xlab("Diagnostische Region") +
-#         ylim(c(0, 100)) + myGgTheme)
-
-eye.diagnosticity.subj %>% filter(Diagnosticity=="Non-Diagnostic") %>% mutate(relDwell.z = scale(relDwell)[,1]) %>% arrange(desc(abs(relDwell.z))) #exclude subject 18 & 42
-#eye.diagnosticity.subj %>% filter(Diagnosticity=="Non-Diagnostic", ROI=="Mouth/Nose") %>% mutate(relDwell.z = scale(relDwell)[,1]) %>% arrange(desc(abs(relDwell.z))) #exclude subject 42?
 
 #2-way interaction (n.s.)
 #eye.diagnosticity %>% group_by(diagnostic, ROI) %>% summarise(relDwell=mean(relDwell, na.rm=T)) %>% summarise(relDwell.anyROI = sum(relDwell))
@@ -863,67 +856,227 @@ eye.diagnosticity %>% filter(subject %in% exclusions.eye.dwell == F) %>% #manual
   group_by(Diagnosticity, subject) %>% summarise(relDwell = mean(relDwell, na.rm=T)) %>% summarise(relDwell.se = se(relDwell, na.rm=T), relDwell = mean(relDwell)) %>% select(relDwell, everything())
 
 #SPAI x Diagnosticity
-eye.diagnosticity.spai = eye.diagnosticity %>% group_by(subject, Diagnosticity, SPAI) %>% 
-  summarise(relDwell.se = se(relDwell, na.rm=T), relDwell = mean(relDwell, na.rm=T))
-eye.diagnosticity.spai %>% group_by(Diagnosticity) %>% summarise(cor.test(relDwell, SPAI, alternative="two.sided") %>% apa::cor_apa(r_ci=T, print=F))
-eye.diagnosticity.spai %>% ggplot(aes(x=SPAI, y=relDwell, color= SPAI, fill=SPAI, group=Diagnosticity)) +
+eye.diagnosticity.spaiXdia = eye.diagnosticity.analysis %>% 
+  filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
+  group_by(subject, SPAI, Diagnosticity) %>% summarise(relDwell = mean(relDwell, na.rm=T)) %>% 
+  left_join(eye.diagnosticity %>% group_by(subject, Diagnosticity) %>% summarise(relDwell.se=se(relDwell*100, na.rm=T)))
+eye.diagnosticity.spaiXdia %>% group_by(Diagnosticity) %>% 
+  summarise(r = cor.test(relDwell, SPAI, alternative="two.sided") %>% apa::cor_apa(r_ci=T, print=F))
+eye.diagnosticity.spaiXdia %>% 
+  ggplot(aes(y=relDwell, x=SPAI, color=SPAI)) +
   facet_wrap(vars(Diagnosticity)) +
-  #facet_wrap(vars(ROI), labeller=labeller(ROI=c("Eyes" = "Augen", "Mouth/Nose" = "Mund/Nase"))) +
-  scale_color_viridis_c() + scale_fill_viridis_c() +
-  geom_errorbar(aes(ymin=relDwell-relDwell.se*1.96, ymax=relDwell+relDwell.se*1.96)) +
-  stat_smooth(method="lm", color = "black") +
-  geom_point(size=4) + 
-  ylab("Relative Dwell Time (%)") + myGgTheme
-
-# #SPAI x Diagnosticity in German
-# eye.diagnosticity.spai = eye.diagnosticity %>% group_by(subject, Diagnosticity, SPAI) %>% 
-#   summarise(relDwell.se = se(relDwell, na.rm=T), relDwell = mean(relDwell, na.rm=T))
-# eye.diagnosticity.spai %>% group_by(Diagnosticity) %>% summarise(cor.test(relDwell, SPAI, alternative="two.sided") %>% apa::cor_apa(r_ci=T, print=F))
-# eye.diagnosticity.spai <- eye.diagnosticity.spai %>%
-#   mutate(Diagnosticity =
-#                     case_when(
-#                       Diagnosticity == "Diagnostic" ~ "Diagnostisch",
-#                       Diagnosticity == "Non-Diagnostic" ~ "Nicht-Diagnostisch"
-#                     ))%>%
-#   rename(Diagnostizität = Diagnosticity)
-# 
-# eye.diagnosticity.spai %>% ggplot(aes(x=SPAI, y=relDwell, color=Diagnostizität, fill=Diagnostizität, group=Diagnostizität)) +
-#   facet_wrap(vars(Diagnostizität)) +
-#   #facet_wrap(vars(ROI), labeller=labeller(ROI=c("Eyes" = "Augen", "Mouth/Nose" = "Mund/Nase"))) +
-#   scale_color_viridis_d() + scale_fill_viridis_d() +
-#   geom_errorbar(aes(ymin=relDwell-relDwell.se*1.96, ymax=relDwell+relDwell.se*1.96)) +
-#   stat_smooth(method="lm", color = "black") +
-#   geom_point(size=4) + 
-#   ylab("Relative Verweildauer (%)") + myGgTheme
+  geom_errorbar(aes(ymin=relDwell-relDwell.se*1.96, ymax=relDwell+relDwell.se*1.96), width=spai.width) +
+  geom_smooth(method="lm", color="black") + geom_point(size=4) +
+  ylab("Average Time to ROIs (sec)") +
+  scale_color_viridis_c() + myGgTheme + theme(legend.position = "none")
 
 #STAI x Diagnosticity
-eye.diagnosticity.stai = eye.diagnosticity %>% group_by(subject, Diagnosticity, STAI) %>% 
-  summarise(relDwell.se = se(relDwell, na.rm=T), relDwell = mean(relDwell, na.rm=T))
-eye.diagnosticity.stai %>% group_by(Diagnosticity) %>% summarise(cor.test(relDwell, STAI, alternative="two.sided") %>% apa::cor_apa(r_ci=T, print=F))
-eye.diagnosticity.stai %>% ggplot(aes(x=STAI, y=relDwell, color=STAI, fill=STAI, group=Diagnosticity)) +
+eye.diagnosticity.staiXdia = eye.diagnosticity.analysis %>% 
+  filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
+  group_by(subject, STAI, Diagnosticity) %>% summarise(relDwell = mean(relDwell, na.rm=T)) %>% 
+  left_join(eye.diagnosticity %>% group_by(subject, Diagnosticity) %>% summarise(relDwell.se=se(relDwell*100, na.rm=T)))
+eye.diagnosticity.staiXdia %>% group_by(Diagnosticity) %>% 
+  summarise(r = cor.test(relDwell, STAI, alternative="two.sided") %>% apa::cor_apa(r_ci=T, print=F))
+eye.diagnosticity.staiXdia %>% 
+  ggplot(aes(y=relDwell, x=STAI, color=STAI)) +
   facet_wrap(vars(Diagnosticity)) +
-  #facet_wrap(vars(ROI), labeller=labeller(ROI=c("Eyes" = "Augen", "Mouth/Nose" = "Mund/Nase"))) +
-  scale_color_viridis_c() + scale_fill_viridis_c() +
   geom_errorbar(aes(ymin=relDwell-relDwell.se*1.96, ymax=relDwell+relDwell.se*1.96)) +
-  stat_smooth(method="lm", color = "black") +
-  geom_point(size=4) + 
-  ylab("Relative Dwell Time (%)") + myGgTheme
+  geom_smooth(method="lm", color="black") + geom_point(size=4) +
+  ylab("Average Time to ROIs (sec)") +
+  scale_color_viridis_c() + myGgTheme + theme(legend.position = "none")
+
+# Hypotheses Latency ------------------------------------------------------
+eye.diagnosticity.ms.subj = eye.diagnosticity.ms %>% group_by(subject, SPAI, STAI, ROI, Diagnosticity, diagnostic) %>% 
+  summarise(ms=mean(ms, na.rm=T)) %>% ungroup() %>% 
+  mutate(ms = ms / 1000) #readability of plot -> convert to sec
+
+eye.diagnosticity.ms.subj %>% mutate(ms.z = scale(ms)[,1]) %>% arrange(desc(abs(ms.z)))
+#eye.diagnosticity.ms.subj %>% arrange(desc(ms)) %>% mutate(ms.z = scale(ms)[,1]) %>% filter(Diagnosticity=="Diagnostic")
+#eye.diagnosticity.ms.subj %>% arrange(desc(ms)) %>% mutate(ms.z = scale(ms)[,1]) %>% filter(Diagnosticity=="Non-Diagnostic")
+
+#exclusions.eye.ms = c(18, 65) #don't exclude but prune subjects
+exclusions.eye.ms = c() #results without exclusions
+
+eye.diagnosticity.ms.analysis = eye.diagnosticity.ms.subj %>% 
+  ungroup() %>% mutate(ms = ms %>% DescTools::Winsorize(probs = q.max)) #Winsorize
+#eye.diagnosticity.ms.analysis %>% mutate(ms.z = scale(ms)[,1]) %>% arrange(desc(abs(ms.z)))
+#problem1: winsorizing reduces SD => z-values get bigger in Winsorized sample (can be |z| > 2)
+#problem2: Winsorizing can change M => some new outliers can pop up, especially if outliers are biased to one direction (which they are here)
+
+
+eye.diagnosticity.ms.analysis %>% filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
+  ez::ezANOVA(dv=.(ms), wid=.(subject),
+              within=.(ROI, Diagnosticity), #within_full=.(threat),
+              #within=.(threat, ROI, Diagnosticity),
+              between=.(SPAI), observed=SPAI,
+              detailed=T, type=2) %>% apa::anova_apa(force_sph_corr=T)
+
+eye.diagnosticity.ms.analysis %>% filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
+  ez::ezANOVA(dv=.(ms), wid=.(subject),
+              within=.(ROI, Diagnosticity), #within_full=.(threat),
+              #within=.(threat, ROI, Diagnosticity),
+              between=.(STAI), observed=STAI,
+              detailed=T, type=2) %>% apa::anova_apa(force_sph_corr=T)
+
+eye.diagnosticity.ms.subj.analysis = eye.diagnosticity.ms.analysis %>% filter(subject %in% exclusions.eye.ms == F) #manual exclusion because of extreme latency
+print(eye.main.ms <- eye.diagnosticity.ms.subj.analysis %>% group_by(diagnostic, Diagnosticity, ROI) %>% summarise(ms.se=se(ms, na.rm=T), ms=mean(ms, na.rm=T)) %>% 
+        ggplot(aes(x=diagnostic, y=ms, color=ROI, shape=Diagnosticity)) + 
+        #ggplot(aes(x=diagnostic, y=ms, color=as.numeric(ROI)==as.numeric(diagnostic))) + 
+        geom_dotplot(data=eye.diagnosticity.ms.subj.analysis %>% filter(ROI=="Eyes"), mapping=aes(group=interaction(ROI, diagnostic), fill=ROI), stackdir="down", binaxis="y", alpha=.25, color="black", stackratio=1, dotsize=.75) +
+        geom_dotplot(data=eye.diagnosticity.ms.subj.analysis %>% filter(ROI!="Eyes"), mapping=aes(group=interaction(ROI, diagnostic), fill=ROI), stackdir="up", binaxis="y", alpha=.25, color="black", stackratio=1, dotsize=.75) +
+        geom_point(size=6, position=dodge) + geom_errorbar(aes(ymin=ms-ms.se*1.96, ymax=ms+ms.se*1.96), size=2, position=dodge) +
+        scale_color_discrete(labels=c("Eyes", "Mouth/Nose")) +
+        #scale_color_discrete(name="Diagnosticity of ROI", labels=c("Diagnostic", "Non-Diagnostic")) +
+        #scale_color_viridis_d(labels=c("Eyes", "Mouth/Nose")) +
+        ylab("Latency to ROI (sec)") + xlab("Diagnostic Region") + myGgTheme)
+
+#ROI x Diagnosticity
+eye.diagnosticity.ms.analysis %>% group_by(Diagnosticity, ROI) %>% summarise(ms.m=mean(ms, na.rm=T), ms.sd = sd(ms, na.rm=T))
+#it takes particularly long to look into non-diagnostic mouth/nose but not for non-diagnostic eyes
+
+#SPAI main effect
+eye.diagnosticity.ms.spai = eye.diagnosticity.ms.analysis %>% 
+  filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
+  group_by(SPAI, subject) %>% summarise(ms = mean(ms, na.rm=T)) %>% 
+  left_join(eye.diagnosticity.ms %>% group_by(subject) %>% summarise(ms.se=se(ms/1000, na.rm=T)))
+eye.diagnosticity.ms.spai %>% with(cor.test(ms, SPAI, alternative="two.sided")) %>% correlation_out()
+eye.diagnosticity.ms.spai %>% 
+  ggplot(aes(y=ms, x=SPAI, color=SPAI)) +
+  geom_errorbar(aes(ymin=ms-ms.se*1.96, ymax=ms+ms.se*1.96), width=.05) +
+  geom_smooth(method="lm", color="black") + geom_point(size=4) +
+  ylab("Average Time to ROIs (sec)") +
+  scale_color_viridis_c() + myGgTheme + theme(legend.position = "none")
+
+#SPAI x Diagnosticity
+eye.diagnosticity.ms.spaiXdia = eye.diagnosticity.ms.analysis %>% 
+  filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
+  group_by(subject, SPAI, Diagnosticity) %>% summarise(ms = mean(ms, na.rm=T)) %>% 
+  left_join(eye.diagnosticity.ms %>% group_by(subject, Diagnosticity) %>% summarise(ms.se=se(ms/1000, na.rm=T)))
+eye.diagnosticity.ms.spaiXdia %>% group_by(Diagnosticity) %>% 
+  summarise(cor.test(ms, SPAI, alternative="two.sided") %>% apa::cor_apa(r_ci=T, print=F))
+eye.diagnosticity.ms.spaiXdia %>% 
+  ggplot(aes(y=ms, x=SPAI, color=SPAI)) +
+  facet_wrap(vars(Diagnosticity)) +
+  geom_errorbar(aes(ymin=ms-ms.se*1.96, ymax=ms+ms.se*1.96), width=.05) +
+  geom_smooth(method="lm", color="black") + geom_point(size=4) +
+  ylab("Average Time to ROIs (sec)") +
+  scale_color_viridis_c() + myGgTheme + theme(legend.position = "none")
+
+
+#Sqrt of Latency to ROIs -----------------------------------------------------------------------------------------------
+eye.diagnosticity.ms_sqrt.subj = eye.diagnosticity.ms.subj %>% mutate(ms = sqrt(ms))
+
+eye.diagnosticity.ms_sqrt.subj %>% mutate(ms.z = scale(ms)[,1]) %>% arrange(desc(abs(ms.z)))
+#eye.diagnosticity.ms_sqrt.subj %>% arrange(desc(ms)) %>% mutate(ms.z = scale(ms)[,1]) %>% filter(Diagnosticity=="Diagnostic")
+#eye.diagnosticity.ms_sqrt.subj %>% arrange(desc(ms)) %>% mutate(ms.z = scale(ms)[,1]) %>% filter(Diagnosticity=="Non-Diagnostic")
+
+#exclusions.eye.ms = c(18, 65) #don't exclude but prune subjects
+exclusions.eye.ms = c() #results without exclusions
+
+eye.diagnosticity.ms_sqrt.analysis = eye.diagnosticity.ms_sqrt.subj %>% 
+  ungroup() %>% mutate(ms = ms %>% DescTools::Winsorize(probs = q.max)) #Winsorize
+#eye.diagnosticity.ms_sqrt.analysis %>% mutate(ms.z = scale(ms)[,1]) %>% arrange(desc(abs(ms.z)))
+#problem1: winsorizing reduces SD => z-values get bigger in Winsorized sample (can be |z| > 2)
+#problem2: Winsorizing can change M => some new outliers can pop up, especially if outliers are biased to one direction (which they are here)
+
+
+eye.diagnosticity.ms_sqrt.analysis %>% filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
+  ez::ezANOVA(dv=.(ms), wid=.(subject),
+              within=.(ROI, Diagnosticity), #within_full=.(threat),
+              #within=.(threat, ROI, Diagnosticity),
+              between=.(SPAI), observed=SPAI,
+              detailed=T, type=2) %>% apa::anova_apa(force_sph_corr=T)
+
+eye.diagnosticity.ms_sqrt.analysis %>% filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
+  ez::ezANOVA(dv=.(ms), wid=.(subject),
+              within=.(ROI, Diagnosticity), #within_full=.(threat),
+              #within=.(threat, ROI, Diagnosticity),
+              between=.(STAI), observed=STAI,
+              detailed=T, type=2) %>% apa::anova_apa(force_sph_corr=T)
+
+eye.diagnosticity.ms_sqrt.subj.analysis = eye.diagnosticity.ms_sqrt.analysis %>% filter(subject %in% exclusions.eye.ms == F) #manual exclusion because of extreme latency
+print(eye.main.ms <- eye.diagnosticity.ms_sqrt.subj.analysis %>% group_by(diagnostic, Diagnosticity, ROI) %>% summarise(ms.se=se(ms, na.rm=T), ms=mean(ms, na.rm=T)) %>% 
+        ggplot(aes(x=diagnostic, y=ms, color=ROI, shape=Diagnosticity)) + 
+        #ggplot(aes(x=diagnostic, y=ms, color=as.numeric(ROI)==as.numeric(diagnostic))) + 
+        geom_dotplot(data=eye.diagnosticity.ms_sqrt.subj.analysis %>% filter(ROI=="Eyes"), mapping=aes(group=interaction(ROI, diagnostic), fill=ROI), stackdir="down", binaxis="y", alpha=.25, color="black", stackratio=1, dotsize=.75) +
+        geom_dotplot(data=eye.diagnosticity.ms_sqrt.subj.analysis %>% filter(ROI!="Eyes"), mapping=aes(group=interaction(ROI, diagnostic), fill=ROI), stackdir="up", binaxis="y", alpha=.25, color="black", stackratio=1, dotsize=.75) +
+        geom_point(size=6, position=dodge) + geom_errorbar(aes(ymin=ms-ms.se*1.96, ymax=ms+ms.se*1.96), size=2, position=dodge) +
+        scale_color_discrete(labels=c("Eyes", "Mouth/Nose")) +
+        #scale_color_discrete(name="Diagnosticity of ROI", labels=c("Diagnostic", "Non-Diagnostic")) +
+        #scale_color_viridis_d(labels=c("Eyes", "Mouth/Nose")) +
+        ylab(expression("Latency to ROI (" * sqrt(sec) * ")")) + xlab("Diagnostic Region") + myGgTheme)
+
+#for descriptive values, back-transform to seconds for interpretability (need to start with ms_sqrt.analysis due to Winsorizing beding slightly different)
+eye.diagnosticity.ms_sqrt.analysis %>% group_by(Diagnosticity) %>% summarise(ms=mean(ms, na.rm=T)^2)
+eye.diagnosticity.ms_sqrt.analysis %>% group_by(ROI) %>% summarise(ms=mean(ms, na.rm=T)^2)
+
+#ROI x Diagnosticity
+eye.diagnosticity.ms_sqrt.analysis %>% group_by(Diagnosticity, ROI) %>% summarise(ms=mean(ms, na.rm=T)^2)
+#it takes particularly long to look into non-diagnostic mouth/nose but not for non-diagnostic eyes
+
+#SPAI main effect
+eye.diagnosticity.ms_sqrt.spai = eye.diagnosticity.ms_sqrt.analysis %>% 
+  filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
+  group_by(SPAI, subject) %>% summarise(ms = mean(ms, na.rm=T)) %>% 
+  left_join(eye.diagnosticity.ms %>% group_by(subject) %>% summarise(ms.se=se(ms/1000, na.rm=T)))
+eye.diagnosticity.ms_sqrt.spai %>% with(cor.test(ms, SPAI, alternative="two.sided")) %>% correlation_out()
+eye.diagnosticity.ms_sqrt.spai %>% 
+  ggplot(aes(y=ms, x=SPAI, color=SPAI)) +
+  geom_errorbar(aes(ymin=ms-ms.se*1.96, ymax=ms+ms.se*1.96), width=spai.width) +
+  geom_smooth(method="lm", color="black") + geom_point(size=4) +
+  ylab(expression("Average Time to ROIs (" * sqrt(sec) * ")")) +
+  scale_color_viridis_c() + myGgTheme + theme(legend.position = "none")
+
+#SPAI x Diagnosticity
+eye.diagnosticity.ms.spaiXdia = eye.diagnosticity.ms_sqrt.analysis %>% 
+  filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
+  group_by(subject, SPAI, Diagnosticity) %>% summarise(ms = mean(ms, na.rm=T)) %>% 
+  left_join(eye.diagnosticity.ms %>% group_by(subject, Diagnosticity) %>% summarise(ms.se=se(ms/1000, na.rm=T)))
+eye.diagnosticity.ms.spaiXdia %>% group_by(Diagnosticity) %>% 
+  summarise(r = cor.test(ms, SPAI, alternative="two.sided") %>% apa::cor_apa(r_ci=T, print=F))
+eye.diagnosticity.ms.spaiXdia %>% 
+  ggplot(aes(y=ms, x=SPAI, color=SPAI)) +
+  facet_wrap(vars(Diagnosticity)) +
+  geom_errorbar(aes(ymin=ms-ms.se*1.96, ymax=ms+ms.se*1.96), width=spai.width) +
+  geom_smooth(method="lm", color="black") + geom_point(size=4) +
+  ylab(expression("Average Time to ROIs (" * sqrt(sec) * ")")) +
+  scale_color_viridis_c() + myGgTheme + theme(legend.position = "none")
+
+#STAI x Diagnosticity
+eye.diagnosticity.ms.staiXdia = eye.diagnosticity.ms_sqrt.analysis %>% 
+  filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
+  group_by(subject, STAI, Diagnosticity) %>% summarise(ms = mean(ms, na.rm=T)) %>% 
+  left_join(eye.diagnosticity.ms %>% group_by(subject, Diagnosticity) %>% summarise(ms.se=se(ms/1000, na.rm=T)))
+eye.diagnosticity.ms.staiXdia %>% group_by(Diagnosticity) %>% 
+  summarise(r = cor.test(ms, STAI, alternative="two.sided") %>% apa::cor_apa(r_ci=T, print=F))
+eye.diagnosticity.ms.staiXdia %>% 
+  ggplot(aes(y=ms, x=STAI, color=STAI)) +
+  facet_wrap(vars(Diagnosticity)) +
+  geom_errorbar(aes(ymin=ms-ms.se*1.96, ymax=ms+ms.se*1.96)) +
+  geom_smooth(method="lm", color="black") + geom_point(size=4) +
+  ylab(expression("Average Time to ROIs (" * sqrt(sec) * ")")) +
+  scale_color_viridis_c() + myGgTheme + theme(legend.position = "none")
+
+#STAI x ROI
+eye.diagnosticity.ms.staiXroi = eye.diagnosticity.ms_sqrt.analysis %>% 
+  filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
+  group_by(subject, STAI, ROI) %>% summarise(ms = mean(ms, na.rm=T)) %>% 
+  left_join(eye.diagnosticity.ms %>% group_by(subject, ROI) %>% summarise(ms.se=se(ms/1000, na.rm=T)))
+eye.diagnosticity.ms.staiXroi %>% group_by(ROI) %>% 
+  summarise(r = cor.test(ms, STAI, alternative="two.sided") %>% apa::cor_apa(r_ci=T, print=F))
+eye.diagnosticity.ms.staiXroi %>% 
+  ggplot(aes(y=ms, x=STAI, color=STAI)) +
+  facet_wrap(vars(ROI)) +
+  geom_errorbar(aes(ymin=ms-ms.se*1.96, ymax=ms+ms.se*1.96)) +
+  geom_smooth(method="lm", color="black") + geom_point(size=4) +
+  ylab(expression("Average Time to ROIs (" * sqrt(sec) * ")")) +
+  scale_color_viridis_c() + myGgTheme + theme(legend.position = "none")
+
 
 # Hypotheses ROI switches ---------------------------------------------------
-#exclusions.eye.switch = c(18, 62) #TODO don't exclude but prune subjects?
+#exclusions.eye.switch = c() #don't exclude but prune subjects?
 exclusions.eye.switch = c() #results without exclusions
 
-# small ANOVA
-eye.gen %>% 
-  filter(subject %in% exclusions.eye.switch == F) %>% #manual exclusion because of extreme switching??
-  ez::ezANOVA(dv=.(roiSwitch.m), wid=.(subject),
-              #within=.(threat, Diagnosticity),
-              between=.(SPAI), observed=SPAI,
-              #between=.(STAI), observed=STAI,
-              detailed=T, type=2) %>% apa::anova_apa(force_sph_corr=T)
-eye.gen %>% with(cor.test(roiSwitch.m, SPAI, alternative="greater")) %>% correlation_out()
-
-# bigger ANOVA
 eye.diagnosticity %>% 
   filter(subject %in% exclusions.eye.switch == F) %>% #manual exclusion because of extreme switching??
   ez::ezANOVA(dv=.(roiSwitch), wid=.(subject),
@@ -935,13 +1088,27 @@ eye.diagnosticity %>%
 
 #SPAI main effect
 eye.gen.spai = eye.gen %>% 
-  filter(subject %in% exclusions.eye.switch == F) %>% #manual exclusion because of extreme latency
+  filter(subject %in% exclusions.eye.switch == F) %>% #manual exclusion because of extreme values
   group_by(SPAI, subject) %>% summarise(switches.se = roiSwitch.se, roiSwitch.m = roiSwitch.m)
-eye.gen.spai %>% with(cor.test(roiSwitch.m, SPAI, alternative="two.sided")) %>% correlation_out()
-eye.gen.spai %>% 
+eye.gen %>% filter(subject %in% exclusions.eye.switch == F) %>% with(cor.test(roiSwitch.m, SPAI, alternative="greater")) %>% correlation_out()
+eye.gen.spai %>% filter(subject %in% exclusions.eye.switch == F) %>% 
   ggplot(aes(y=roiSwitch.m, x=SPAI, color=SPAI)) +
   geom_point(size=4) +
-  geom_errorbar(aes(ymin=roiSwitch.m-switches.se*1.96, ymax=roiSwitch.m+switches.se*1.96), width=.05) +
+  geom_errorbar(aes(ymin=roiSwitch.m-switches.se*1.96, ymax=roiSwitch.m+switches.se*1.96), width=spai.width) +
+  geom_smooth(method="lm", color="black") + 
+  ylab("Mean number of Switches") +
+  scale_color_viridis_c() + myGgTheme + theme(legend.position = "none")
+
+#STAI x diagnostic
+eye.gen.stai = eye.gen.diagnostic %>% 
+  filter(subject %in% exclusions.eye.switch == F) %>% #manual exclusion because of extreme latency
+  group_by(STAI, diagnostic, subject) %>% summarise(switches.se = roiSwitch.se, roiSwitch.m = roiSwitch.m)
+#eye.gen %>% with(cor.test(roiSwitch.m, SPAI, alternative="greater")) %>% correlation_out()
+eye.gen.diagnostic %>% filter(subject %in% exclusions.eye.switch == F) %>% group_by(diagnostic) %>% summarise(r = cor.test(roiSwitch.m, STAI, alternative="greater") %>% correlation_out(T))
+eye.gen.stai %>% filter(subject %in% exclusions.eye.switch == F) %>% 
+  ggplot(aes(y=roiSwitch.m, x=STAI, color=STAI)) + facet_wrap(vars(diagnostic)) +
+  geom_point(size=4) +
+  geom_errorbar(aes(ymin=roiSwitch.m-switches.se*1.96, ymax=roiSwitch.m+switches.se*1.96), width=spai.width) +
   geom_smooth(method="lm", color="black") + 
   ylab("Mean number of Switches") +
   scale_color_viridis_c() + myGgTheme + theme(legend.position = "none")
@@ -953,18 +1120,18 @@ eye.diagnosticity %>%
 eye.diagnosticity.diagnostic = eye.diagnosticity %>% 
   filter(subject %in% exclusions.eye.switch == F) %>% #manual exclusion because of extreme latency
   group_by(subject,SPAI,diagnostic) %>% summarise(switches.se = se(roiSwitch, na.rm=T), roiSwitch.m = mean(roiSwitch, na.rm=T))
-eye.diagnosticity.diagnostic  %>% t.test(roiSwitch.m ~ diagnostic, ., paired=T) %>% apa::t_apa(es_ci=T)
-eye.diagnosticity.diagnostic %>%
-  ggplot(aes(y=roiSwitch.m, x=SPAI, color= as.factor(diagnostic), fill=as.factor(diagnostic), group=diagnostic)) +
-  #facet_wrap(vars(diagnostic)) +
-  #geom_errorbar(aes(ymin=roiSwitch.m-switches.se*1.96, ymax=roiSwitch.m+switches.se*1.96), width=.05) +
-  scale_color_discrete(labels=c("Eyes", "Mouth/Nose")) +
-  geom_smooth(method="lm", color="black") + 
-  geom_point(size=4, alpha = 0.3) +
-  ylab("Mean number of Switches") +
-  #scale_color_viridis_c() + 
-  myGgTheme +
-  labs(color='Diagnostic Region', fill = 'Diagnostic Region' ) 
+#eye.diagnosticity.diagnostic  %>% t.test(roiSwitch.m ~ diagnostic, ., paired=T) %>% apa::t_apa(es_ci=T)
+# eye.diagnosticity.diagnostic %>%
+#   ggplot(aes(y=roiSwitch.m, x=SPAI, color= as.factor(diagnostic), fill=as.factor(diagnostic), group=diagnostic)) +
+#   #facet_wrap(vars(diagnostic)) +
+#   #geom_errorbar(aes(ymin=roiSwitch.m-switches.se*1.96, ymax=roiSwitch.m+switches.se*1.96), width=.05) +
+#   scale_color_discrete(labels=c("Eyes", "Mouth/Nose")) +
+#   geom_smooth(method="lm", color="black") + 
+#   geom_point(size=4, alpha = 0.3) +
+#   ylab("Mean number of Switches") +
+#   #scale_color_viridis_c() + 
+#   myGgTheme +
+#   labs(color='Diagnostic Region', fill = 'Diagnostic Region' ) 
 
 #threat main effect
 eye.diagnosticity.threat.subject = eye.diagnosticity %>% 
@@ -994,24 +1161,13 @@ print(eye.diagnosticity.threat.plot <- eye.diagnosticity.threat %>% ggplot(aes(x
           #aspect.ratio = 1,
           legend.position = "none",
           axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 0, l = 0, "pt"))))
-eye.diagnosticity.threat %>% select(threat, roiSwitch.m, switches.se) #descriptive values
+eye.diagnosticity.threat %>% filter(subject %in% exclusions.eye.switch == F) %>% select(threat, roiSwitch.m, switches.se) #descriptive values
 
 
 # Hypotheses Scanpath length ---------------------------------------------------
-#exclusions.eye.switch = c(18, 62) #TODO don't exclude but prune subjects?
+#exclusions.eye.switch = c() #don't exclude but prune subjects?
 exclusions.eye.scanpath = c() #results without exclusions
 
-# small ANOVA
-eye.gen %>% 
-  filter(subject %in% exclusions.eye.scanpath == F) %>% #manual exclusion because of extreme switching??
-  ez::ezANOVA(dv=.(scanPath.m), wid=.(subject),
-              #within=.(threat, Diagnosticity),
-              between=.(SPAI), observed=SPAI,
-              #between=.(STAI), observed=STAI,
-              detailed=T, type=2) %>% apa::anova_apa(force_sph_corr=T)
-eye.gen %>% with(cor.test(scanPath.m, SPAI, alternative="greater")) %>% correlation_out()
-
-# bigger ANOVA
 eye.diagnosticity %>% 
   filter(subject %in% exclusions.eye.scanpath == F) %>% #manual exclusion because of extreme switching??
   ez::ezANOVA(dv=.(scanPath), wid=.(subject),
@@ -1023,9 +1179,9 @@ eye.diagnosticity %>%
 
 #(marginally significant) SPAI main effect
 eye.gen.scanpath.spai = eye.gen %>% 
-  filter(subject %in% exclusions.eye.scanpath == F) %>% #manual exclusion because of extreme latency
+  filter(subject %in% exclusions.eye.scanpath == F) %>%
   group_by(SPAI, subject) 
-eye.gen.scanpath.spai %>% with(cor.test(scanPath.m, SPAI, alternative="two.sided")) %>% correlation_out()
+eye.gen.scanpath.spai %>% filter(subject %in% exclusions.eye.scanpath == F) %>% with(cor.test(scanPath.m, SPAI, alternative="greater")) %>% correlation_out()
 eye.gen.scanpath.spai %>% 
   ggplot(aes(y=scanPath.m, x=SPAI, color=SPAI)) +
   geom_errorbar(aes(ymin=scanPath.m-scanPath.se*1.96, ymax=scanPath.m+scanPath.se*1.96), width=.05) +
@@ -1041,17 +1197,17 @@ eye.diagnosticity.scanpath = eye.diagnosticity %>%
   filter(subject %in% exclusions.eye.scanpath == F) %>% #manual exclusion because of extreme latency
   group_by(subject,SPAI,diagnostic) %>% summarise(scanPath.se = se(scanPath, na.rm=T), scanPath.m = mean(scanPath, na.rm=T))
 eye.diagnosticity.scanpath  %>% t.test(scanPath.m ~ diagnostic, ., paired=T) %>% apa::t_apa(es_ci=T)
-eye.diagnosticity.scanpath %>%
-  ggplot(aes(y=scanPath.m, x=SPAI, color= as.factor(diagnostic), fill=as.factor(diagnostic), group=diagnostic)) +
-  #facet_wrap(vars(diagnostic)) +
-  #geom_errorbar(aes(ymin=scanPath.m-scanPath.se*1.96, ymax=scanPath.m+scanPath.se*1.96), width=.05) +
-  scale_color_discrete(labels=c("Eyes", "Mouth/Nose")) +
-  geom_smooth(method="lm", color="black") + 
-  geom_point(size=4, alpha = 0.3) +
-  ylab("Mean Scanpath Length") +
-  #scale_color_viridis_c() + 
-  myGgTheme +
-  labs(color='Diagnostic Region', fill = 'Diagnostic Region' ) 
+# eye.diagnosticity.scanpath %>%
+#   ggplot(aes(y=scanPath.m, x=SPAI, color= as.factor(diagnostic), fill=as.factor(diagnostic), group=diagnostic)) +
+#   #facet_wrap(vars(diagnostic)) +
+#   #geom_errorbar(aes(ymin=scanPath.m-scanPath.se*1.96, ymax=scanPath.m+scanPath.se*1.96), width=.05) +
+#   scale_color_discrete(labels=c("Eyes", "Mouth/Nose")) +
+#   geom_smooth(method="lm", color="black") + 
+#   geom_point(size=4, alpha = 0.3) +
+#   ylab("Mean Scanpath Length") +
+#   #scale_color_viridis_c() + 
+#   myGgTheme +
+#   labs(color='Diagnostic Region', fill = 'Diagnostic Region' ) 
 
 #threat main effect
 eye.diagnosticity.threat.scanpath = eye.diagnosticity %>% 
@@ -1107,183 +1263,10 @@ print(eye.diagnosticity.threat.diagnostic.scanpath.plot <- eye.diagnosticity.thr
         labs(color='Diagnostic Region', fill = 'Diagnostic Region'))
 
 
-# Hypotheses Latency ------------------------------------------------------
-#exclusions.eye.ms = c(18, 62) #TODO don't exclude but prune subjects?
-exclusions.eye.ms = c() #results without exclusions
-
-eye.diagnosticity.ms %>% filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
-  ez::ezANOVA(dv=.(ms), wid=.(subject),
-              within=.(ROI, Diagnosticity), within_full=.(threat, trial),
-              #within=.(threat, ROI, Diagnosticity),
-              between=.(SPAI), observed=SPAI,
-              #between=.(STAI), observed=STAI,
-              detailed=T, type=2) %>% apa::anova_apa(force_sph_corr=T)
-
-eye.diagnosticity.ms.subj = eye.diagnosticity.ms %>% mutate(ms = ms / 1000) %>% #readability of plot -> convert to sec
-  group_by(diagnostic, Diagnosticity, ROI, subject) %>% summarise(ms=mean(ms, na.rm=T))
-eye.diagnosticity.ms.subj.analysis = eye.diagnosticity.ms.subj %>% filter(subject %in% exclusions.eye.ms == F) #manual exclusion because of extreme latency
-print(eye.main.ms <- eye.diagnosticity.ms.subj.analysis %>% summarise(ms.se=se(ms, na.rm=T), ms=mean(ms, na.rm=T)) %>% 
-        ggplot(aes(x=diagnostic, y=ms, color=ROI, shape=Diagnosticity)) + 
-        #ggplot(aes(x=diagnostic, y=ms, color=as.numeric(ROI)==as.numeric(diagnostic))) + 
-        geom_dotplot(data=eye.diagnosticity.ms.subj.analysis %>% filter(ROI=="Eyes"), mapping=aes(group=interaction(ROI, diagnostic), fill=ROI), stackdir="down", binaxis="y", alpha=.25, color="black", stackratio=1, dotsize=.75) +
-        geom_dotplot(data=eye.diagnosticity.ms.subj.analysis %>% filter(ROI!="Eyes"), mapping=aes(group=interaction(ROI, diagnostic), fill=ROI), stackdir="up", binaxis="y", alpha=.25, color="black", stackratio=1, dotsize=.75) +
-        geom_point(size=6, position=dodge) + geom_errorbar(aes(ymin=ms-ms.se*1.96, ymax=ms+ms.se*1.96), size=2, position=dodge) +
-        scale_color_discrete(labels=c("Eyes", "Mouth/Nose")) +
-        #scale_color_discrete(name="Diagnosticity of ROI", labels=c("Diagnostic", "Non-Diagnostic")) +
-        #scale_color_viridis_d(labels=c("Eyes", "Mouth/Nose")) +
-        ylab("Latency to ROI (sec)") + xlab("Diagnostic Region") + myGgTheme)
-
-# # Figure in German 
-#eye.diagnosticity.ms.subj.analysis <- eye.diagnosticity.ms.subj.analysis %>%
-#   mutate(ROI =
-#          case_when(
-#            ROI == "Eyes"~ "Augen",
-#            ROI == "Mouth/Nose" ~ "Mund/Nase"
-#          )) %>%
-#   mutate(Diagnosticity =
-#            case_when(
-#              Diagnosticity == "Diagnostic" ~ "Diagnostisch",
-#              Diagnosticity == "Non-Diagnostic" ~ "Nicht-Diagnostisch"
-#            ))%>%
-#   mutate(diagnostic =
-#            case_when(
-#              diagnostic == "Eyes" ~ "Augen",
-#              diagnostic == "Mouth/Nose" ~ "Mund/Nase"
-#            ))%>%
-#   rename(Diagnostizität = Diagnosticity)
-# print(eye.main.ms <- eye.diagnosticity.ms.subj.analysis %>% summarise(ms.se=se(ms, na.rm=T), ms=mean(ms, na.rm=T)) %>%
-#         ggplot(aes(x=diagnostic, y=ms, color=ROI, shape=Diagnostizität)) +
-#         #ggplot(aes(x=diagnostic, y=ms, color=as.numeric(ROI)==as.numeric(diagnostic))) +
-#         geom_dotplot(data=eye.diagnosticity.ms.subj.analysis %>% filter(ROI=="Augen"), mapping=aes(group=interaction(ROI, diagnostic), fill=ROI), stackdir="down", binaxis="y", alpha=.25, color="black", stackratio=1, dotsize=.75) +
-#         geom_dotplot(data=eye.diagnosticity.ms.subj.analysis %>% filter(ROI!="Augen"), mapping=aes(group=interaction(ROI, diagnostic), fill=ROI), stackdir="up", binaxis="y", alpha=.25, color="black", stackratio=1, dotsize=.75) +
-#         geom_point(size=6, position=dodge) + geom_errorbar(aes(ymin=ms-ms.se*1.96, ymax=ms+ms.se*1.96), size=2, position=dodge) +
-#         scale_color_discrete(labels=c("Augen", "Mund/Nase")) +
-#         #scale_color_discrete(name="Diagnosticity of ROI", labels=c("Diagnostic", "Non-Diagnostic")) +
-#         #scale_color_viridis_d(labels=c("Eyes", "Mouth/Nose")) +
-#         ylab("Latenz zu ROI (s)") + xlab("Diagnostische Region") + myGgTheme)
-
-
-eye.diagnosticity.ms.subj %>% mutate(ms.z = scale(ms)[,1]) %>% arrange(desc(abs(ms.z))) #exclude 18 & 62
-# eye.diagnosticity.ms.subj %>% filter(Diagnosticity=="Diagnostic") %>% arrange(desc(ms)) %>% mutate(ms.z = scale(ms)[,1]) #exclude subject 18?
-# eye.diagnosticity.ms.subj %>% filter(Diagnosticity=="Non-Diagnostic") %>% arrange(ms) %>% mutate(ms.z = scale(ms)[,1])
-
-#ROI x Diagnosticity
-eye.diagnosticity.ms %>% group_by(Diagnosticity, ROI) %>% summarise(ms=mean(ms, na.rm=T))
-#it takes particularly long to look into non-diagnostic mouth/nose but not for non-diagnostic eyes
-
-#SPAI main effect
-eye.diagnosticity.ms.spai = eye.diagnosticity.ms %>% 
-  filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
-  mutate(ms = ms / 1000) %>% #readability of y-axis
-  group_by(SPAI, subject) %>% summarise(ms.se = se(ms, na.rm=T), ms = mean(ms, na.rm=T))
-eye.diagnosticity.ms.spai %>% with(cor.test(ms, SPAI, alternative="two.sided")) %>% correlation_out()
-eye.diagnosticity.ms.spai %>% 
-  ggplot(aes(y=ms, x=SPAI, color=SPAI)) +
-  geom_errorbar(aes(ymin=ms-ms.se*1.96, ymax=ms+ms.se*1.96), width=.05) +
-  geom_smooth(method="lm", color="black") + geom_point(size=4) +
-  ylab("Average Time to ROIs (sec)") +
-  scale_color_viridis_c() + myGgTheme + theme(legend.position = "none")
-
-#SPAI x Diagnosticity
-eye.diagnosticity.ms.spaiXdia = eye.diagnosticity.ms %>% 
-  filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
-  mutate(ms = ms / 1000) %>% #readability of y-axis
-  group_by(subject, SPAI, Diagnosticity) %>% summarise(ms.se = se(ms, na.rm=T), ms = mean(ms, na.rm=T))
-eye.diagnosticity.ms.spaiXdia %>% group_by(Diagnosticity) %>% 
-  summarise(cor.test(ms, SPAI, alternative="two.sided") %>% apa::cor_apa(r_ci=T, print=F))
-eye.diagnosticity.ms.spaiXdia %>% 
-  ggplot(aes(y=ms, x=SPAI, color=SPAI)) +
-  facet_wrap(vars(Diagnosticity)) +
-  geom_errorbar(aes(ymin=ms-ms.se*1.96, ymax=ms+ms.se*1.96), width=.05) +
-  geom_smooth(method="lm", color="black") + geom_point(size=4) +
-  ylab("Average Time to ROIs (sec)") +
-  scale_color_viridis_c() + myGgTheme + theme(legend.position = "none")
-
-# #SPAI x Diagnosticity in German
-# eye.diagnosticity.ms.spaiXdia = eye.diagnosticity.ms %>% 
-#   filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
-#   mutate(ms = ms / 1000) %>% #readability of y-axis
-#   group_by(subject, SPAI, Diagnosticity) %>% summarise(ms.se = se(ms, na.rm=T), ms = mean(ms, na.rm=T))
-# eye.diagnosticity.ms.spaiXdia %>% group_by(Diagnosticity) %>% 
-#   summarise(cor.test(ms, SPAI, alternative="two.sided") %>% apa::cor_apa(r_ci=T, print=F))
-# eye.diagnosticity.ms.spaiXdia <- eye.diagnosticity.ms.spaiXdia %>%
-#   mutate(Diagnosticity =
-#            case_when(
-#              Diagnosticity == "Diagnostic" ~ "Diagnostisch",
-#              Diagnosticity == "Non-Diagnostic" ~ "Nicht-Diagnostisch"
-#            ))%>%
-#   rename(Diagnostizität = Diagnosticity)
-# eye.diagnosticity.ms.spaiXdia %>% 
-#   ggplot(aes(y=ms, x=SPAI, color=SPAI)) +
-#   facet_wrap(vars(Diagnostizität)) +
-#   geom_errorbar(aes(ymin=ms-ms.se*1.96, ymax=ms+ms.se*1.96), width=.05) +
-#   geom_smooth(method="lm", color="black") + geom_point(size=4) +
-#   ylab("Durchschnittliche Latenz zu ROIs (s)") +
-#   scale_color_viridis_c() + myGgTheme + theme(legend.position = "none")
-
-#Sqrt of Latency to ROIs -----------------------------------------------------------------------------------------------
-#exclusions.eye.ms = c(18, 62) #TODO don't exclude but prune subjects?
-exclusions.eye.ms = c() #results without exclusions
-
-eye.diagnosticity.ms.sqrt <- eye.diagnosticity.ms%>%
-  mutate(ms = sqrt(ms))
-
-eye.diagnosticity.ms.sqrt %>% filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
-  ez::ezANOVA(dv=.(ms), wid=.(subject),
-              within=.(ROI, Diagnosticity), within_full=.(threat, trial),
-              #within=.(threat, ROI, Diagnosticity),
-              between=.(SPAI), observed=SPAI,
-              #between=.(STAI), observed=STAI,
-              detailed=T, type=2) %>% apa::anova_apa(force_sph_corr=T)
-
-eye.diagnosticity.ms.sqrt.subj = eye.diagnosticity.ms.sqrt %>% mutate(ms = ms / 1000) %>% #readability of plot -> convert to sec
-  group_by(diagnostic, Diagnosticity, ROI, subject) %>% summarise(ms=mean(ms, na.rm=T))
-eye.diagnosticity.ms.sqrt.subj.analysis = eye.diagnosticity.ms.sqrt.subj %>% filter(subject %in% exclusions.eye.ms == F) #manual exclusion because of extreme latency
-
-print(eye.main.ms <- eye.diagnosticity.ms.sqrt.subj.analysis %>% summarise(ms.se=se(ms, na.rm=T), ms=mean(ms, na.rm=T)) %>% 
-        ggplot(aes(x=diagnostic, y=ms, color=ROI, shape=Diagnosticity)) + 
-        #ggplot(aes(x=diagnostic, y=ms, color=as.numeric(ROI)==as.numeric(diagnostic))) + 
-        geom_dotplot(data=eye.diagnosticity.ms.sqrt.subj.analysis %>% filter(ROI=="Eyes"), mapping=aes(group=interaction(ROI, diagnostic), fill=ROI), stackdir="down", binaxis="y", alpha=.25, color="black", stackratio=1, dotsize=.75) +
-        geom_dotplot(data=eye.diagnosticity.ms.sqrt.subj.analysis %>% filter(ROI!="Eyes"), mapping=aes(group=interaction(ROI, diagnostic), fill=ROI), stackdir="up", binaxis="y", alpha=.25, color="black", stackratio=1, dotsize=.75) +
-        geom_point(size=6, position=dodge) + geom_errorbar(aes(ymin=ms-ms.se*1.96, ymax=ms+ms.se*1.96), size=2, position=dodge) +
-        scale_color_discrete(labels=c("Eyes", "Mouth/Nose")) +
-        #scale_color_discrete(name="Diagnosticity of ROI", labels=c("Diagnostic", "Non-Diagnostic")) +
-        #scale_color_viridis_d(labels=c("Eyes", "Mouth/Nose")) +
-        ylab(expression("Latency to ROI (" * sqrt(ms) * ")")) + xlab("Diagnostic Region") + myGgTheme)
-
-#SPAI main effect
-eye.diagnosticity.ms.sqrt.spai = eye.diagnosticity.ms.sqrt %>% 
-  filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
-  mutate(ms = ms / 1000) %>% #readability of y-axis
-  group_by(SPAI, subject) %>% summarise(ms.se = se(ms, na.rm=T), ms = mean(ms, na.rm=T))
-eye.diagnosticity.ms.sqrt.spai %>% with(cor.test(ms, SPAI, alternative="two.sided")) %>% correlation_out()
-eye.diagnosticity.ms.sqrt.spai %>% 
-  ggplot(aes(y=ms, x=SPAI, color=SPAI)) +
-  geom_errorbar(aes(ymin=ms-ms.se*1.96, ymax=ms+ms.se*1.96), width=.05) +
-  geom_smooth(method="lm", color="black") + geom_point(size=4) +
-  ylab(expression("Latency to ROI (" * sqrt(ms) * ")")) +
-  scale_color_viridis_c() + myGgTheme + theme(legend.position = "none")
-
-#SPAI x Diagnosticity
-eye.diagnosticity.ms.sqrt.spaiXdia = eye.diagnosticity.ms.sqrt %>% 
-  filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
-  mutate(ms = ms / 1000) %>% #readability of y-axis
-  group_by(subject, SPAI, Diagnosticity) %>% summarise(ms.se = se(ms, na.rm=T), ms = mean(ms, na.rm=T))
-eye.diagnosticity.ms.sqrt.spaiXdia %>% group_by(Diagnosticity) %>% 
-  summarise(cor.test(ms, SPAI, alternative="two.sided") %>% apa::cor_apa(r_ci=T, print=F))
-eye.diagnosticity.ms.sqrt.spaiXdia %>% 
-  ggplot(aes(y=ms, x=SPAI, color=SPAI)) +
-  facet_wrap(vars(Diagnosticity)) +
-  geom_errorbar(aes(ymin=ms-ms.se*1.96, ymax=ms+ms.se*1.96), width=.05) +
-  geom_smooth(method="lm", color="black") + geom_point(size=4) +
-  ylab(expression("Latency to ROI (" * sqrt(ms) * ")")) +
-  scale_color_viridis_c() + myGgTheme + theme(legend.position = "none")
-
-
 # Exploration -------------------------------------------------------------
 eye.anova.big = eye.diagnosticity.bins %>% filter(bin <= ratingStart/1000) %>% mutate(bin = as.factor(bin)) %>% 
   ez::ezANOVA(dv=.(relDwell), wid=.(subject), 
-              within=.(Diagnosticity, ROI, threat, bin), within_full=.(trial),
+              within=.(Diagnosticity, ROI, threat, bin), #within_full=.(trial),
               detailed=T, type=2)
 eye.anova.big %>% apa::anova_apa(force_sph_corr=T)
 
@@ -1366,19 +1349,6 @@ eye.diagnosticity.bins %>% filter(bin <= ratingStart/1000) %>%
   geom_ribbon(aes(ymin=relDwell-relDwell.se*1.96, ymax=relDwell+relDwell.se*1.96), color=NA, fill="black", alpha=.15) +
   geom_point(size=6) + geom_line(size=2) +
   ylab("Relative Dwell Time on ROIs (%)") + xlab("Trial Time (sec)") + myGgTheme #+ labs(shape="Diagnostic"))
-
-# ROI x threat x bin (n.s.)
-# eye.diagnosticity.bins %>% filter(bin <= ratingStart/1000) %>% 
-#   group_by(ROI, bin, threat, subject) %>% summarise(relDwell=mean(relDwell, na.rm=T)) %>% 
-#   ungroup() %>% mutate(relDwell = relDwell*100) %>% #improves readability of axes
-#   group_by(ROI, bin, threat) %>% summarise(relDwell.se=se(relDwell, na.rm=T), relDwell=mean(relDwell, na.rm=T)) %>% 
-#   mutate(threat = recode(threat, `1` = "CS-", `2` = "GS1", `3` = "GS2", `4` = "GS3", `5` = "GS4", `6` = "CS+")) %>% 
-#   ggplot(aes(x=bin, y=relDwell, color=ROI)) + 
-#   facet_wrap(vars(threat)) +
-#   geom_ribbon(aes(ymin=relDwell-relDwell.se*1.96, ymax=relDwell+relDwell.se*1.96, fill=ROI), color=NA, alpha=.15) +
-#   geom_point(size=6) + geom_line(size=2) +
-#   scale_color_discrete(labels=c("Eyes", "Mouth/Nose")) + scale_fill_discrete(labels=c("Eyes", "Mouth/Nose")) + 
-#   ylab("Relative Dwell Time (%)") + xlab("Trial Time (sec)") + myGgTheme #+ labs(shape="Diagnostic"))
 
 
 #interactions with threat
@@ -1483,8 +1453,7 @@ eyes.wide = eye.gen.diagnostic %>% select(-contains(".se")) %>%
               cname %>% grepl("_Mouth/Nose", ., fixed=T) ~ cname %>% gsub("_Mouth/Nose", "", ., fixed=T) %>% gsub(".m", "", ., fixed=T) %>% paste0("Gen_mn_", .),
               T ~ cname)
   }) %>% full_join(eye.gen %>% select(-contains(".se")) %>% rename_with(
-    function(cname) {paste0("Gen_all_", cname %>% gsub(".m", "", ., fixed=T))}, .cols=contains(".m")), .)
-
+## old code (replaced by rename_with)
 # names(eyes.wide)[-1] = names(eyes.wide)[-1] %>% {ifelse(grepl("Eyes", ., fixed=T), "eyes", "mn")} %>% 
 #   paste("Gen", ., names(eyes.wide)[-1] %>% gsub("_.*", "", .) %>% gsub(".m", "", ., fixed=T), sep="_")
 
@@ -1492,5 +1461,9 @@ eyes.wide = eye.gen.diagnostic %>% select(-contains(".se")) %>%
 # names(eyes.wide) = c("subject", paste0("Gen_", do.call(paste0, expand.grid(c("eyes_", "mn_"), measures %>% sort()))))
 # eyes.wide = eye.gen %>% select(-contains(".se")) %>% merge(eyes.wide, by="subject", all=T) %>% tibble()
 # names(eyes.wide)[1 + 1:length(measures)] = paste0("Gen_all_", measures)
+    function(cname) {paste0("Gen_all_", cname %>% gsub(".m", "", ., fixed=T))}, .cols=contains(".m")), .) %>% 
+  
+  select(subject, SPAI, STAI, everything()) %>% 
+  ungroup() %>% mutate(across(c(-subject, -SPAI, -STAI), DescTools::Winsorize, probs = q.max))
 
 #write_rds(eyes.wide, "eyes.wide.rds" %>% paste0(path.rds, .))
