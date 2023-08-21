@@ -37,7 +37,7 @@ requirePackage("DescTools")
   #statistical analysis
   z.max = 2 #winsorize dependent variables to a z value of 2
   q.max = pnorm(z.max * c(-1, 1)) #needed for DescTools::Winsorize function
-  q.max = c(0, 1) #switch off Winsorizing
+  q.max = c(0, 1) #switch off Winsorizing (comment out to switch on)
 }
 
 { # Functions ---------------------------------------------------------------
@@ -1146,7 +1146,7 @@ eye.diagnosticity.switch.dia  %>% t.test(roiSwitch.m ~ diagnostic, ., paired=T) 
 eye.diagnosticity.switch.subj.threat = eye.diagnosticity %>% 
   filter(subject %in% exclusions.eye.switch == F) %>% #manual exclusion because of extreme latency
   group_by(subject, threat) %>% summarise(switches.se = se(roiSwitch, na.rm=T), roiSwitch.m = mean(roiSwitch, na.rm=T))
-for (i in (min(as.numeric(eye.diagnosticity.switch.subj.threat$threat))+1):max(as.numeric(eye.diagnosticity.switch.threat$threat))) {
+for (i in (min(as.numeric(eye.diagnosticity.switch.subj.threat$threat))+1):max(as.numeric(eye.diagnosticity.switch.subj.threat$threat))) {
   levels = c(i-1, i)
   cat(paste0("\n\nComparing levels: ", paste(levels, collapse=" vs. "), "\n"))
   eye.diagnosticity.switch.subj.threat %>% filter(threat %in% levels) %>% 
