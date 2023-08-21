@@ -142,7 +142,8 @@ heart = heart.wide %>% subset(subject %in% exclusions.hr == F) %>% gather(key="t
          time = time %>% gsub("hr.", "", .) %>% as.integer() %>% {. / 2} %>% as.factor(),
          SPAI.z = scale(SPAI)[,1], STAI.z = scale(STAI)[,1]) %>% select(-condition)
 
-#write_rds(heart, "heart.rds" %>% paste0(path.rds, .))
+#all(heart == read_rds("heart.rds" %>% paste0(path.rds, .)), na.rm=T) #check equivalence of processing
+#heart %>% write_rds("heart.rds" %>% paste0(path.rds, .))
 
 # Plots -------------------------------------------------------------
 #heart = read_rds("heart.rds" %>% paste0(path.rds, .))
@@ -259,7 +260,13 @@ ez::ezANOVA(data=heart.simple.gen,
             dv=.(HRchange), wid=.(subject), 
             within=.(threat, diagnostic), 
             between=.(SPAI.z), observed=.(SPAI.z),
-            #between=.(STAI.z), observed=.(STAI.z),
+            #between=.(pairs),
+            detailed=T, type=2) %>% apa::anova_apa(force_sph_corr=T)
+
+ez::ezANOVA(data=heart.simple.gen, 
+            dv=.(HRchange), wid=.(subject), 
+            within=.(threat, diagnostic), 
+            between=.(STAI.z), observed=.(STAI.z),
             #between=.(pairs),
             detailed=T, type=2) %>% apa::anova_apa(force_sph_corr=T)
 
@@ -289,6 +296,19 @@ print(heart.spai.plot <- heart.simple.gen.lvl %>% ggplot(aes(x=SPAI, y=HRchange.
         ylab("Heart Rate Change (bpm)") +
         scale_color_viridis_c() + scale_fill_viridis_c() + myGgTheme + theme(legend.position = "none"))
 
+#SPAI x threat x diagnostic
+heart.simple.spaiXthreatXdiagnostic = heart.simple.gen %>% group_by(subject, SPAI, STAI, threat, diagnostic) %>% summarise(HRchange.se = se(HRchange, na.rm=T), HRchange.m = mean(HRchange, na.rm=T))
+heart.simple.spaiXthreatXdiagnostic %>% group_by(threat, diagnostic) %>% summarise(rtest = cor.test(HRchange.m, SPAI) %>% correlation_out(returnString=T), r = cor(HRchange.m, SPAI)) %>% arrange(desc(r))
+print(heart.spaiInteraction.plot <- heart.simple.spaiXthreatXdiagnostic %>% ggplot(aes(x=SPAI, y=HRchange.m, color=SPAI, fill=SPAI)) +
+        facet_grid(rows=vars(threat), cols=vars(diagnostic),  labeller = label_both) +
+        geom_errorbar(aes(ymin=HRchange.m-HRchange.se*1.96, ymax=HRchange.m+HRchange.se*1.96), width=spai.width) +
+        stat_smooth(method="lm", color = "black") +
+        #geom_point(size=4, shape=21, color="black") +
+        geom_point(size=4) + 
+        ylab("Heart Rate Change (bpm)") +
+        scale_color_viridis_c() + scale_fill_viridis_c() + myGgTheme + theme(legend.position = "none"))
+
+
 #hr change acquisition
 heart.ga.acq = heart %>% filter(phase == "Acq") %>% subset((subject %in% exclusions.onlyGen & phase != "Gen") == F) %>% #exclude habituation & acquisition for onlyGen subjects (see "0 General.R")
   group_by(threat, subject) %>% summarise(HRchange.se = se(HRchange, na.rm=T), HRchange = mean(HRchange, na.rm=T)) %>%
@@ -303,8 +323,6 @@ heart.simple %>% filter(phase == "Acq") %>% subset((subject %in% exclusions.only
   t.test(HRchange ~ threat, ., alternative="greater", 
          paired=T) %>% apa::t_apa(es_ci=T) #schoRsch::t_out()
 
-#SPAI x threat x diagnostic
-#TODO
 
 
 # Exploration -------------------------------------------------------------
@@ -408,7 +426,7 @@ print(heart.spai.all.plot <- heart.spaiSD.all.predict %>%
                threat = threat %>% recode_factor(`1` = "CS-", `2` = "GS1", `3` = "GS2", `4` = "GS3", `5` = "GS4", `6` = "CS+")) %>% 
         ggplot(aes(x=time, y=HRchange, group=SPAI, color=SPAI)) +
         geom_line(size=4) +
-        facet_grid(rows=vars(threat), cols=vars(diagnostic)) +
+        facet_grid(rows=vars(threat), cols=vars(diagnostic), labeller = label_both) +
         ylab("Heart Rate Change (bpm)") + xlab("Trial Time (sec)") +
         scale_color_viridis_c() + myGgTheme)
 
@@ -456,4 +474,5 @@ names(hr.gradients.diagnostic) = c("lds", "diff", "level") %>% {c("subject", pas
 hr.gradients = merge(hr.gradients.simple, hr.gradients.diagnostic, by="subject")
 
 heart.wide = hr.gradients %>% tibble() #TODO add more info, e.g. subject-average of HR baseline?
-#write_rds(heart.wide, "heart.wide.rds" %>% paste0(path.rds, .))
+#all(heart.wide == read_rds("heart.wide.rds" %>% paste0(path.rds, .)), na.rm=T) #check equivalence of processing
+#heart.wide %>% write_rds("heart.wide.rds" %>% paste0(path.rds, .))
