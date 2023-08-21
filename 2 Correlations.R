@@ -301,7 +301,7 @@ reg.lds.ms = data.wide %>% filter(subject %in% exclusions.eye.ms == F) %>% #manu
          ms.diag.type = ifelse(grepl("_eyes_", ms.diag.type), "Eyes", "Mouth/Nose") %>% as.factor()) %>% 
   filter(lds.type == ms.diag.type) %>% 
   mutate(ms.diag.type = ifelse(ms.diag.type=="Eyes", -1, 1)) %>% 
-  mutate(lds = scale(lds), ms.diag = scale(ms.diag), SPAI = scale(SPAI), STAI = scale(STAI)) %>% #z-transform
+  #mutate(lds = scale(lds), ms.diag = scale(ms.diag), SPAI = scale(SPAI), STAI = scale(STAI)) %>% #z-transform
   #lmer(lds ~ ms.diag*ms.diag.type*SPAI + (1|subject), .)
   #lmer(lds ~ ms.diag*ms.diag.type*STAI + (1|subject), .)
   lmer(lds ~ ms.diag*ms.diag.type + (1|subject), .)
@@ -410,20 +410,20 @@ heart.dwell = data.wide %>% filter(subject %in% exclusions.eye.dwell == F) %>% #
   mutate(dwell.type.dummy = ifelse(dwell.type=="Eyes", -1, 1)) %>% 
   mutate(lds.z = scale(lds), dwell.z = scale(dwell), SPAI.z = scale(SPAI), STAI.z = scale(STAI)) #z-transform
 reg.heart.dwell = heart.dwell %>% 
-  #lmer(lds.z ~ dwell.z*dwell.type.dummy*SPAI.z + (1|subject), .)
+  lmer(lds.z ~ dwell.z*dwell.type.dummy*SPAI.z + (1|subject), .)
   #lmer(lds.z ~ dwell.z*dwell.type.dummy*STAI.z + (1|subject), .)
-  lmer(lds.z ~ dwell.z*dwell.type.dummy + (1|subject), .)
+  #lmer(lds.z ~ dwell.z*dwell.type.dummy + (1|subject), .)
 
 reg.heart.dwell %>% summary()
 reg.heart.dwell %>% lmer.ci() 
 #reg.heart.dwell %>% lmer.ci(twotailed = F)
 
-#main effect dwell
-print(reg.dwell.hr.plot <- heart.dwell %>% 
+#main effect dwell (marginal)
+print(reg.dwell.hr.plot <- heart.dwell %>%
         ggplot(aes(x=dwell, y=lds, color=dwell.type, fill=dwell.type, shape=dwell.type)) +
-        #geom_line(aes(group=subject), color="black", linetype="dashed") + 
+        #geom_line(aes(group=subject), color="black", linetype="dashed") +
         geom_smooth(method="lm", size=1.5, alpha = .2) +
-        geom_point(size=4, alpha=.8) + 
+        geom_point(size=4, alpha=.8) +
         ylab("LDS of Heart Change") + xlab("Diagnostic Dwell (%)") + labs(color="Diagnostic", fill="Diagnostic", shape="Diagnostic") +
         scale_shape_manual(values=c(16, 15)) +
         myGgTheme +
@@ -452,22 +452,22 @@ heart.dwell %>% ggplot(aes(x=SPAI, y=lds, color=dwell.type, fill=dwell.type, sha
   )
 
 #dwell x SPAI
-# SDs = -2:2
-# spai.descr = with(questionnaires, data.frame(SPAI=mean(SPAI)+sd(SPAI)*SDs, SPAI.z=SDs))
-# reg.heart.spaiSD.predict = spai.descr %>%
-#   expand.grid.df(data.frame(dwell=unique(data.wide$Gen_all_dwell %>% na.omit())) %>% mutate(dwell.z=scale(dwell))) %>%
-#   expand.grid.df(data.frame(subject=0, dwell.type.dummy=0)) %>% #include mockup subject for population-level prediction (could avoid this and add "re.form=NA" to predict but less flexibility with additional subject-level predictions or based on non-lmer model objects, i.e. predict.merMod)
-#   mutate(lds = predict(reg.heart.dwell, newdata=., allow.new.levels=T)) #predict values from dwell time & z-scaled SPAI
-# 
-# print(reg.dwell.hr.spai.plot <- heart.dwell %>% group_by(subject) %>% 
-#         summarise(dwell=mean(dwell, na.rm=T), lds=mean(lds, na.rm=T), SPAI=mean(SPAI, na.rm=T)) %>% 
-#         ggplot(aes(x=dwell, y=lds, color=SPAI, group=SPAI)) +
-#         geom_hline(yintercept = 0, linetype="dashed") +
-#         geom_line(data=reg.heart.spaiSD.predict, size=4) +
-#         geom_point(size=2) +
-#         ylab("LDS of Heart Change") + xlab("Diagnostic Dwell (%)") +
-#         myGgTheme + scale_color_viridis_c()
-# )
+SDs = -2:2
+spai.descr = with(questionnaires, data.frame(SPAI=mean(SPAI)+sd(SPAI)*SDs, SPAI.z=SDs))
+reg.heart.spaiSD.predict = spai.descr %>%
+  expand.grid.df(data.frame(dwell=unique(data.wide$Gen_all_dwell %>% na.omit())) %>% mutate(dwell.z=scale(dwell))) %>%
+  expand.grid.df(data.frame(subject=0, dwell.type.dummy=0)) %>% #include mockup subject for population-level prediction (could avoid this and add "re.form=NA" to predict but less flexibility with additional subject-level predictions or based on non-lmer model objects, i.e. predict.merMod)
+  mutate(lds = predict(reg.heart.dwell, newdata=., allow.new.levels=T)) #predict values from dwell time & z-scaled SPAI
+
+print(reg.dwell.hr.spai.plot <- heart.dwell %>% group_by(subject) %>%
+        summarise(dwell=mean(dwell, na.rm=T), lds=mean(lds, na.rm=T), SPAI=mean(SPAI, na.rm=T)) %>%
+        ggplot(aes(x=dwell, y=lds, color=SPAI, group=SPAI)) +
+        geom_hline(yintercept = 0, linetype="dashed") +
+        geom_line(data=reg.heart.spaiSD.predict, size=4) +
+        geom_point(size=2) +
+        ylab("LDS of Heart Change") + xlab("Diagnostic Dwell (%)") +
+        myGgTheme + scale_color_viridis_c()
+)
 
 
 #Heartrate: LDS & Square Root of Time to diagnostic ROI
@@ -509,7 +509,7 @@ print(reg.ms.hr.spai.plot <- heart.ms %>% group_by(subject) %>%
 )
 
 
-#SPAI x ms.diag.type (n.s. in dwell analysis despite same dummy variable -> suppressed/enhanced by other predictors)
+#SPAI x ms.diag.type
 print(data.wide %>% filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
         gather("lds.type", "lds", c("HR_Gen_eyes_lds", "HR_Gen_mn_lds")) %>%
         gather("ms.diag.type", "ms.diag", c("Gen_eyes_ms", "Gen_mn_ms")) %>%
@@ -544,8 +544,8 @@ reg.eda.dwell = data.wide %>% gather("lds.type", "lds", c("EDA_Gen_eyes_lds", "E
   #mutate(dwell.type = factor(dwell.type)) %>% 
   mutate(dwell.type = ifelse(dwell.type=="Eyes", -1, 1)) %>% 
   mutate(lds = scale(lds), dwell = scale(dwell), SPAI = scale(SPAI), STAI = scale(STAI)) %>% #z-transform
-  #lmer(lds ~ dwell*dwell.type*SPAI + (1|subject), .) 
-  lmer(lds ~ dwell*dwell.type*STAI + (1|subject), .) 
+  lmer(lds ~ dwell*dwell.type*SPAI + (1|subject), .) 
+  #lmer(lds ~ dwell*dwell.type*STAI + (1|subject), .) 
   #lmer(lds ~ dwell*dwell.type + (1|subject), .) 
 
 reg.eda.dwell %>% summary() %>% print()
@@ -579,8 +579,8 @@ reg.eda.ms = data.wide %>% gather("lds.type", "lds", c("EDA_Gen_eyes_lds", "EDA_
   filter(lds.type == ms.diag.type) %>% 
   mutate(ms.diag.type = ifelse(ms.diag.type=="Eyes", -1, 1)) %>% 
   mutate(lds = scale(lds), ms.diag = scale(ms.diag), SPAI = scale(SPAI), STAI = scale(STAI)) %>% #z-transform
-  #lmer(lds ~ ms.diag*ms.diag.type*SPAI + (1|subject), .) 
-  lmer(lds ~ ms.diag*ms.diag.type*STAI + (1|subject), .) 
+  lmer(lds ~ ms.diag*ms.diag.type*SPAI + (1|subject), .) 
+  #lmer(lds ~ ms.diag*ms.diag.type*STAI + (1|subject), .) 
   #lmer(lds ~ ms.diag*ms.diag.type + (1|subject), .) 
 
 reg.eda.ms %>% summary() %>% print()
@@ -601,4 +601,3 @@ data.wide %>% gather("lds.type", "lds", c("EDA_Gen_eyes_lds", "EDA_Gen_mn_lds"))
   myGgTheme + theme(
     #legend.position = "none",
     legend.position = c(.87, .87))
-
