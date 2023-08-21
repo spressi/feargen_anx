@@ -39,7 +39,9 @@ for (filename in files.pupil) {
 # Exploration -------------------------------------------------------------------
 pupil = pupil.avg %>% bind_rows(.id="subject") %>% mutate(time = signal$time, mmChange = signal$mmChange, change.z = signal$change.z) %>% select(-signal) %>% 
   group_by(phase, threat, time, subject) %>% summarise(mmChange = mean(mmChange, na.rm=T), change.z = mean(change.z, na.rm=T)) #collapse across unwanted grouping variables
+#pupil %>% write_rds("pupil.rds" %>% paste0(path.rds, .))
 
+#pupil = read_rds("pupil.rds" %>% paste0(path.rds, .))
 pupil.diff = pupil %>% pivot_wider(names_from = threat, values_from = mmChange, id_cols = c("phase", "time", "subject")) %>% 
   mutate(`diff.CS+` = `CS+` - `CS-`, `diff.GS1` = `GS1` - `CS-`, `diff.GS2` = `GS2` - `CS-`, `diff.GS3` = `GS3` - `CS-`, `diff.GS4` = `GS4` - `CS-`) %>%
   select(subject, phase, time, starts_with("diff")) %>% 
@@ -113,7 +115,6 @@ pupil.trial.avg = pupil.trial %>% bind_rows(.id="subject") %>% group_by(subject,
     change.z.se = se(change.z, na.rm=T), change.z = mean(change.z, na.rm=T))) %>% 
   mutate(subject = subject %>% gsub("vp", "", .) %>% as.numeric(), #subject to number
          mmChange = pupil$mmChange, mmChange.se = pupil$mmChange.se, mmChange.z = pupil$change.z, mmChange.z.se = pupil$change.z.se) %>% select(-pupil) 
-#pupil.trial.avg %>% write_rds("pupil.trial.avg.rds" %>% paste0(path.rds, .))
 
 questionnaires_pupil <- questionnaires %>%
   mutate(subject = paste0("vp",ifelse(subject < 10, "0",""),subject))
