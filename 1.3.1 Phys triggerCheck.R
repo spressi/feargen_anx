@@ -6,17 +6,18 @@ toPhysFileName = function(x, width=2, prefix="vp", postfix=".txt") x %>% toPhysS
 toCode = function(x, prefix="vp", postfix="") x %>% toPhysString() %>% paste0(prefix, ., postfix)
 
 exclusions.phys.trials = list()
-exclusions.phys.trials[[toCode(10)]] =  1:3 + gen1End-.5  #vp10: Gen2 restarted after  3 trials: (skip triggers 131-133)
-exclusions.phys.trials[[toCode(31)]] =  1:5               #vp31: Hab  restarted after  5 trials: (skip triggers 1-5)
-exclusions.phys.trials[[toCode(41)]] =  1                 #vp41: Hab  restarted after  1 trial
-exclusions.phys.trials[[toCode(44)]] =  1:21              #vp44: Hab  restarted after  21 trials
-exclusions.phys.trials[[toCode(45)]] =  c(1:3 + acqEnd-.5, 1:4 + 3+gen1End-.5) #vp45: Gen1 restarted after 3 trials & Gen2 restarted after 4 #careful: have to add the 3 excessive Gen1 trials to Gen2, too
-exclusions.phys.trials[[toCode(46)]] =  1 + gen1End-.5    #vp46: Gen2 restarted after  1 trial
-exclusions.phys.trials[[toCode(50)]] =  1:28              #vp50: Hab  restarted after 28 trials
-exclusions.phys.trials[[toCode(82)]] =  1:7 + acqEnd-.5   #vp82: Gen1 restarted after  7 trials
-exclusions.phys.trials[[toCode(85)]] =  1:2 + acqEnd-.5   #vp85: Gen1 restarted after  2 trials
-exclusions.phys.trials[[toCode(95)]] =  1:5               #vp95: Hab  restarted after  5 trials
-
+{ #manual exclusions (can run script with empty list to verify)
+  exclusions.phys.trials[[toCode(10)]] =  1:3 + gen1End-.5  #vp10: Gen2 restarted after  3 trials: (skip triggers 131-133)
+  exclusions.phys.trials[[toCode(31)]] =  1:5               #vp31: Hab  restarted after  5 trials: (skip triggers 1-5)
+  exclusions.phys.trials[[toCode(41)]] =  1                 #vp41: Hab  restarted after  1 trial
+  exclusions.phys.trials[[toCode(44)]] =  1:21              #vp44: Hab  restarted after  21 trials
+  exclusions.phys.trials[[toCode(45)]] =  c(1:3 + acqEnd-.5, 1:4 + 3+gen1End-.5) #vp45: Gen1 restarted after 3 trials & Gen2 restarted after 4 #careful: have to add the 3 excessive Gen1 trials to Gen2, too
+  exclusions.phys.trials[[toCode(46)]] =  1 + gen1End-.5    #vp46: Gen2 restarted after  1 trial
+  exclusions.phys.trials[[toCode(50)]] =  1:28              #vp50: Hab  restarted after 28 trials
+  exclusions.phys.trials[[toCode(82)]] =  1:7 + acqEnd-.5   #vp82: Gen1 restarted after  7 trials
+  exclusions.phys.trials[[toCode(85)]] =  1:2 + acqEnd-.5   #vp85: Gen1 restarted after  2 trials
+  exclusions.phys.trials[[toCode(95)]] =  1:5               #vp95: Hab  restarted after  5 trials
+}
 
 breakPositions.theory = floor(c(acqEnd, gen1End))
 breaks.theory = length(breakPositions.theory)
@@ -48,4 +49,3 @@ for (file in files.phys) {
   if (length(mst)!=trials.n || breaks.theory!=breaks.detected || any(breakPositions.theory!=breakPositions.detected)) 
     warning(file)
 }
-
