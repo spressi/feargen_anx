@@ -10,12 +10,14 @@
 # - Save single-trial data (+ grand average)
 
 # INFO: This script requires the edfR package, which is only available for Mac
+# Update: eyelinkReader to the rescue!
 
 #require("spatstat")
 require("eyelinkReader")
 #require("edfR")
 require("png")
-require("signal")
+#require("signal") #don't load because it will mask dplyr::filter
+if ("signal" %in% rownames(installed.packages()) == FALSE) install.packages("signal")
 
 options(warn=2)
 
@@ -140,8 +142,8 @@ for (vp in vpn) {
         # Multiply first and last value to get rid of smoothing artefacts
         pdidsf <- c(rep(pdids[1],100),pdids,rep(pdids[length(pdids)],100))
         pdidsf[is.na(pdidsf)] <- mean(pdidsf,na.rm=TRUE)
-        bf <- butter(2, 1/(newhz/2)*2)     # 2 Hz low-pass filter
-        pdidssmooth <- filtfilt(bf, pdidsf) # apply filter
+        bf <- signal::butter(2, 1/(newhz/2)*2)     # 2 Hz low-pass filter
+        pdidssmooth <- signal::filtfilt(bf, pdidsf) # apply filter
         pdidssmooth <- pdidssmooth[101:(length(pdidssmooth)-100)]
       } else {
         pdidssmooth <- pdids
