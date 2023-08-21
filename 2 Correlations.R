@@ -534,7 +534,7 @@ data.wide %>% with(cor.test(HR_Gen_mn_lds, SPAI, alternative="two.sided")) %>% c
 
 
 
-# EDA --------------------------------------------------
+# EDA (no effects) --------------------------------------
 reg.eda.dwell = data.wide %>% gather("lds.type", "lds", c("EDA_Gen_eyes_lds", "EDA_Gen_mn_lds")) %>% 
   gather("dwell.type", "dwell", c("Gen_eyes_dwell", "Gen_mn_dwell")) %>%
   select(subject:STAI, lds.type:dwell) %>% 
