@@ -4,6 +4,9 @@ if(!require(tidyverse)) install.packages("tidyverse"); library(tidyverse)
 requirePackage("lme4")
 requirePackage("lmerTest")
 
+#TODO separate by first and second half? Rather too much exploration already
+#TODO pupil gradients :)
+
 #ratings.wide = read_rds("ratings.wide.rds" %>% paste0(path.rds, .)) #or path
 #eyes.wide = read_rds("eyes.wide.rds" %>% paste0(path.rds, .)) #or path
 #heart.wide = read_rds("heart.wide.rds" %>% paste0(path.rds, .)) #or path
@@ -19,7 +22,8 @@ data.wide = full_join(questionnaires, ratings.wide, by="subject") %>%
 #   full_join(heart.wide, by="subject") #%>%
 # #full_join(eda.wide, by="subject")
 
-#write_rds(data.wide, "data.wide.rds" %>% paste0(path.rds, .))
+#all(data.wide == read_rds("data.wide.rds" %>% paste0(path.rds, .)), na.rm=T) #check equivalence of processing
+#data.wide %>% write_rds("data.wide.rds" %>% paste0(path.rds, .))
 
 
 # Screening Quality -------------------------------------------------------
@@ -148,9 +152,57 @@ print(correl.ms.plot <- data.wide %>% filter(subject %in% exclusions.eye.ms == F
         theme(
           #aspect.ratio = 1,
           #legend.position = "none",
-          legend.position = c(.87, 1-.87))
+          legend.position = c(.87, .87))
           #legend.position = c(.5, 1-.87))
 )
+
+#STAI main effect
+data.wide %>% with(cor.test(Gen_all_lds, STAI, alternative="less")) %>% correlation_out()  #apa::cor_apa(r_ci=T)
+
+print(correl.ms.stai.plot <- data.wide %>% filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
+        gather("lds.type", "lds", c("Gen_eyes_lds", "Gen_mn_lds")) %>% 
+        gather("ms.diag.type", "ms.diag", c("Gen_eyes_ms", "Gen_mn_ms")) %>%
+        select(subject:STAI, lds.type:ms.diag) %>% 
+        mutate(lds.type = ifelse(grepl("_eyes_", lds.type), "Eyes", "Mouth/Nose") %>% as.factor(),
+               ms.diag.type = ifelse(grepl("_eyes_", ms.diag.type), "Eyes", "Mouth/Nose") %>% as.factor()) %>% 
+        filter(lds.type == ms.diag.type) %>% 
+        ggplot(aes(x=STAI, y=lds, color=ms.diag.type, fill=ms.diag.type, shape=ms.diag.type)) +
+        geom_smooth(method="lm", size=1.5, alpha = .2) +
+        #stat_smooth(method="lm", size=1.5, alpha = .2, fullrange = T) +
+        geom_point(size=4, alpha=.8) + 
+        ylab("Linear Deviation Score") + labs(color="Diagnostic", fill="Diagnostic", shape="Diagnostic") +
+        scale_shape_manual(values=c(16, 15)) +
+        myGgTheme +
+        theme(
+          #aspect.ratio = 1,
+          #legend.position = "none",
+          legend.position = c(.87, 1-.87))
+      #legend.position = c(.5, 1-.87))
+)
+
+#interaction
+correl.ms.staiInteraction = data.wide %>% filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
+  gather("lds.type", "lds", c("Gen_eyes_lds", "Gen_mn_lds")) %>% 
+  gather("ms.diag.type", "ms.diag", c("Gen_eyes_ms", "Gen_mn_ms")) %>%
+  select(subject:STAI, lds.type:ms.diag) %>% 
+  mutate(lds.type = ifelse(grepl("_eyes_", lds.type), "Eyes", "Mouth/Nose") %>% as.factor(),
+         ms.diag.type = ifelse(grepl("_eyes_", ms.diag.type), "Eyes", "Mouth/Nose") %>% as.factor()) %>% 
+  filter(lds.type == ms.diag.type) %>% 
+  mutate(stai.group = ifelse(STAI > median(STAI, na.rm=T), "high", "low") %>% factor(levels=c("low", "high")))
+correl.ms.staiInteraction %>% summarise(rtest = cor.test(lds, STAI) %>% correlation_out(returnString=T), 
+                                        .by=c("ms.diag.type", "stai.group"))
+print(correl.ms.staiInteraction.plot <- correl.ms.staiInteraction %>% 
+        ggplot(aes(x=STAI, y=lds, color=ms.diag.type, fill=ms.diag.type, shape=ms.diag.type)) +
+        facet_wrap(vars(stai.group), scales="free_x") +
+        #facet_grid(rows=vars(ms.diag.type), cols=vars(stai.group), scales="free_x") +
+        geom_smooth(method="lm", size=1.5, alpha = .2) +
+        #stat_smooth(method="lm", size=1.5, alpha = .2, fullrange = T) +
+        geom_point(size=4, alpha=.8) + 
+        ylab("Linear Deviation Score") + labs(color="Diagnostic", fill="Diagnostic", shape="Diagnostic") +
+        scale_shape_manual(values=c(16, 15)) +
+        myGgTheme
+)
+#only for low anxiety & stimuli with diagnostic eyes: correlation descriptively negative (as expected for all groups)
 
 
 # #Ratings: LDS & Square Root of Time to non-diagnostic ROI ---- CHECK LMM!!
