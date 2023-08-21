@@ -39,6 +39,7 @@ for (filename in files.pupil) {
 # Exploration -------------------------------------------------------------------
 pupil = pupil.avg %>% bind_rows(.id="subject") %>% mutate(time = signal$time, mmChange = signal$mmChange, change.z = signal$change.z) %>% select(-signal) %>% 
   group_by(phase, threat, time, subject) %>% summarise(mmChange = mean(mmChange, na.rm=T), change.z = mean(change.z, na.rm=T)) #collapse across unwanted grouping variables
+#all(pupil == read_rds("pupil.rds" %>% paste0(path.rds, .)), na.rm=T) #check equivalence of processing
 #pupil %>% write_rds("pupil.rds" %>% paste0(path.rds, .))
 
 #pupil = read_rds("pupil.rds" %>% paste0(path.rds, .))
@@ -84,6 +85,10 @@ pupil.diff %>% #filter(time <= 4) %>%
 pupil.diag = pupil.avg %>% bind_rows(.id="subject") %>% mutate(time = signal$time, mmChange = signal$mmChange) %>% select(-signal) %>% 
   group_by(phase, diagnostic, threat, time) %>% summarise(mmChange.se = se(mmChange, na.rm=T), 
                                                           mmChange = mean(mmChange, na.rm=T))
+#all(pupil.diag == read_rds("pupil.diag.rds" %>% paste0(path.rds, .)), na.rm=T) #check equivalence of processing
+#pupil.diag %>% write_rds("pupil.diag.rds" %>% paste0(path.rds, .))
+
+#pupil.diag = read_rds("pupil.diag.rds" %>% paste0(path.rds, .))
 pupil.diag$phase <- factor(pupil.diag$phase, levels = c("Hab", "Acq", "Gen"))
 pupil.diag %>% ggplot(aes(x=time, y=mmChange, color=threat, group=threat)) + 
   facet_grid(rows=vars(diagnostic), cols=vars(phase)) +
