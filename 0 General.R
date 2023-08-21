@@ -267,4 +267,3 @@ questionnaires %>%
 #exclusions = exclusions %>% c(questionnaires %>% filter(problem==T) %>% .$subject) #rather don't exclude because if subjects were "lying", assume it was during sreening
 
 #questionnaires %>% select(SPAI, STAI) %>% summarise(across(.fns = function(x) {max(x) - min(x)})) %>% mutate(width = SPAI/STAI) #=> round spai.width to .1 (see above)
-

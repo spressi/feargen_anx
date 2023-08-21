@@ -669,7 +669,7 @@ rois.nondiag = vector("list", length(rois))
 rois.nondiag[[1]] = rois[[length(rois)]]
 for (i in seq(rois)[-1]) rois.nondiag[[i]] = rois[[i-1]]
 
-#write_rds(rois, "rois.rds" %>% paste0(path.rds, .)); write_rds(rois.nondiag, "rois.nondiag.rds" %>% paste0(path.rds, .))
+#rois %>% write_rds("rois.rds" %>% paste0(path.rds, .)); write_rds(rois.nondiag, "rois.nondiag.rds" %>% paste0(path.rds, .))
 
 # ROI analysis ------------------------------------------------------------
 #rois = read_rds("rois.rds" %>% paste0(path.rds, .)); rois.nondiag = read_rds("rois.nondiag.rds" %>% paste0(path.rds, .))
@@ -729,6 +729,7 @@ print(eye.invalid.dwell <- eye %>% group_by(subject) %>% summarise(nBad = sum(dw
 vpn.eye = vpn.eye %>% setdiff(eye.invalid.dwell)
 eye = eye %>% filter(subject %in% vpn.eye) %>% merge(questionnaires, by="subject", all.x=T) %>% tibble()
 
+#all(eye == read_rds("eye.rds" %>% paste0(path.rds, .)), na.rm=T) #check equivalence of processing
 #eye %>% write_rds("eye.rds" %>% paste0(path.rds, .))
 
 # Prepare data for analyses -----------------------------------------------
@@ -857,7 +858,7 @@ eye.diagnosticity %>% filter(subject %in% exclusions.eye.dwell == F) %>% #manual
 
 #SPAI x Diagnosticity
 eye.diagnosticity.spaiXdia = eye.diagnosticity.analysis %>% 
-  filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
+  filter(subject %in% exclusions.eye.dwell == F) %>% #manual exclusion because of extreme latency
   group_by(subject, SPAI, Diagnosticity) %>% summarise(relDwell = mean(relDwell, na.rm=T)) %>% 
   left_join(eye.diagnosticity %>% group_by(subject, Diagnosticity) %>% summarise(relDwell.se=se(relDwell*100, na.rm=T)))
 eye.diagnosticity.spaiXdia %>% group_by(Diagnosticity) %>% 
@@ -872,7 +873,7 @@ eye.diagnosticity.spaiXdia %>%
 
 #STAI x Diagnosticity
 eye.diagnosticity.staiXdia = eye.diagnosticity.analysis %>% 
-  filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
+  filter(subject %in% exclusions.eye.dwell == F) %>% #manual exclusion because of extreme latency
   group_by(subject, STAI, Diagnosticity) %>% summarise(relDwell = mean(relDwell, na.rm=T)) %>% 
   left_join(eye.diagnosticity %>% group_by(subject, Diagnosticity) %>% summarise(relDwell.se=se(relDwell*100, na.rm=T)))
 eye.diagnosticity.staiXdia %>% group_by(Diagnosticity) %>% 
@@ -953,7 +954,7 @@ eye.diagnosticity.ms.spaiXdia = eye.diagnosticity.ms.analysis %>%
   group_by(subject, SPAI, Diagnosticity) %>% summarise(ms = mean(ms, na.rm=T)) %>% 
   left_join(eye.diagnosticity.ms %>% group_by(subject, Diagnosticity) %>% summarise(ms.se=se(ms/1000, na.rm=T)))
 eye.diagnosticity.ms.spaiXdia %>% group_by(Diagnosticity) %>% 
-  summarise(cor.test(ms, SPAI, alternative="two.sided") %>% apa::cor_apa(r_ci=T, print=F))
+  summarise(rtest = cor.test(ms, SPAI, alternative="two.sided") %>% apa::cor_apa(r_ci=T, print=F))
 eye.diagnosticity.ms.spaiXdia %>% 
   ggplot(aes(y=ms, x=SPAI, color=SPAI)) +
   facet_wrap(vars(Diagnosticity)) +
@@ -1115,7 +1116,7 @@ eye.gen.diagnostic %>% filter(subject %in% exclusions.eye.switch == F) %>% group
 eye.gen.switch.stai %>% filter(subject %in% exclusions.eye.switch == F) %>% 
   ggplot(aes(y=roiSwitch.m, x=STAI, color=STAI)) + facet_wrap(vars(diagnostic)) +
   geom_point(size=4) +
-  geom_errorbar(aes(ymin=roiSwitch.m-switches.se*1.96, ymax=roiSwitch.m+switches.se*1.96), width=spai.width) +
+  geom_errorbar(aes(ymin=roiSwitch.m-switches.se*1.96, ymax=roiSwitch.m+switches.se*1.96)) +
   geom_smooth(method="lm", color="black") + 
   ylab("Mean number of Switches") +
   scale_color_viridis_c() + myGgTheme + theme(legend.position = "none")
@@ -1181,7 +1182,14 @@ eye.diagnosticity %>%
               within =.(diagnostic, threat), #within_full= .(threat, trial),
               #within =.(threat, ROI, Diagnosticity),
               between=.(SPAI), observed=SPAI,
-              #between=.(STAI), observed=STAI,
+              detailed=T, type=2) %>% apa::anova_apa(force_sph_corr=T)
+
+eye.diagnosticity %>% 
+  filter(subject %in% exclusions.eye.scanpath == F) %>% #manual exclusion because of extreme switching??
+  ez::ezANOVA(dv=.(scanPath), wid=.(subject),
+              within =.(diagnostic, threat), #within_full= .(threat, trial),
+              #within =.(threat, ROI, Diagnosticity),
+              between=.(STAI), observed=STAI,
               detailed=T, type=2) %>% apa::anova_apa(force_sph_corr=T)
 
 #(marginally significant) SPAI main effect
@@ -1263,8 +1271,8 @@ print(eye.diagnosticity.scanpath.threatxdia %>%
         ggplot(aes(y=scanPath.m, x=threat, color= as.factor(diagnostic), fill=as.factor(diagnostic), group=diagnostic)) +
         scale_color_discrete(labels=c("Eyes", "Mouth/Nose")) +
         geom_point(size=4, alpha = 0.3) +
-        geom_errorbar(data = eye.diagnosticity.threat.eyes, aes(ymin=scanPath.m-scanPath.se*1.96, ymax=scanPath.m+scanPath.se*1.96), size=1.5) +
-        geom_errorbar(data = eye.diagnosticity.threat.mn, aes(ymin=scanPath.m-scanPath.se*1.96, ymax=scanPath.m+scanPath.se*1.96), size=1.5) +
+        geom_errorbar(data = eye.diagnosticity.scanpath.threat.eyes, aes(ymin=scanPath.m-scanPath.se*1.96, ymax=scanPath.m+scanPath.se*1.96), size=1.5) +
+        geom_errorbar(data = eye.diagnosticity.scanpath.threat.mn, aes(ymin=scanPath.m-scanPath.se*1.96, ymax=scanPath.m+scanPath.se*1.96), size=1.5) +
         ylab("Mean Scanpath Length") +
         myGgTheme +
         labs(color='Diagnostic Region', fill = 'Diagnostic Region'))
@@ -1473,4 +1481,5 @@ eyes.wide = eye.gen.diagnostic %>% select(-contains(".se")) %>%
   select(subject, SPAI, STAI, everything()) %>% 
   ungroup() %>% mutate(across(c(-subject, -SPAI, -STAI), DescTools::Winsorize, probs = q.max))
 
-#write_rds(eyes.wide, "eyes.wide.rds" %>% paste0(path.rds, .))
+#all(eyes.wide == read_rds("eyes.wide.rds" %>% paste0(path.rds, .)), na.rm=T) #check equivalence of processing
+#eyes.wide %>% write_rds("eyes.wide.rds" %>% paste0(path.rds, .))

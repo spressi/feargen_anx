@@ -118,8 +118,8 @@ conditions.csp = conditions %>% mutate(pairs = ifelse(pair %in% 2:3, 2, 1),
   pair = ifelse(pair < mean(unique(conditions$pair)), "csp1", "csp2")) %>% spread(pair, csp) %>% ungroup()
 
 rm(ratings.list, conditions.list)
+#all(ratings.all == read_rds("ratings.rds" %>% paste0(path.rds, .)), na.rm=T) #check equivalence of processing
 #write_rds(ratings.all, "ratings.rds" %>% paste0(path.rds, .)); write_rds(conditions, "conditions.rds" %>% paste0(path.rds, .)); write_rds(conditions.csp, "conditions.csp.rds" %>% paste0(path.rds, .))
-
 
 # Exclusions --------------------------------------------------------------
 #ratings.all = read_rds("ratings.rds" %>% paste0(path.rds, .)); conditions = read_rds("conditions.rds" %>% paste0(path.rds, .)); conditions.csp = read_rds("conditions.csp.rds" %>% paste0(path.rds, .))
@@ -234,7 +234,7 @@ ratings.subject %>% filter(phase == "Hab") %>% group_by(threat) %>% summarise(ra
 ratings.subject %>% filter(phase == "Acq") %>% t.test(rating ~ threat, ., paired=T) %>% apa::t_apa(es_ci=T)
 ratings.subject %>% filter(phase == "Acq") %>% group_by(threat) %>% summarise(rating.m = mean(rating, na.rm=T), rating.sd = sd(rating, na.rm=T), rating.se = se(rating, na.rm=T))
 
-# ANOVA Generalization Phase
+# ANOVA Generalization Phase (SPAI)
 ratings.subject.gen.diagnostic = ratings.gen %>% 
   group_by(subject, SPAI, SPAI.z, STAI, STAI.z, threat, diagnostic, pairs) %>% 
   summarise(rating.m=mean(rating, na.rm=T), rating.se=se(rating, na.rm=T))
@@ -243,7 +243,13 @@ ez::ezANOVA(data=ratings.subject.gen.diagnostic,
             within=.(threat, diagnostic), 
             #between=.(pairs),
             between=.(SPAI.z), observed=SPAI.z,
-            #between=.(STAI.z), observed=STAI.z,
+            detailed=T, type=2) %>% apa::anova_apa(force_sph_corr=T)
+
+ez::ezANOVA(data=ratings.subject.gen.diagnostic, 
+            dv=.(rating.m), wid=.(subject), 
+            within=.(threat, diagnostic), 
+            #between=.(pairs),
+            between=.(STAI.z), observed=STAI.z,
             detailed=T, type=2) %>% apa::anova_apa(force_sph_corr=T)
 
 # ANOVA Generalization Phase per Block 
@@ -495,4 +501,5 @@ ratings.wide = full_join(ratings.wide, gradients, by="subject") %>%
 # ratings.first.wide = full_join(ratings.first.wide, gradients.first.half, by="subject") %>%
 #   select("subject", contains("Hab"), contains("Acq"), contains("Gen"), everything()) %>% tibble()
 
-#write_rds(ratings.wide, "ratings.wide.rds" %>% paste0(path.rds, .))
+#all(ratings.wide == read_rds("ratings.wide.rds" %>% paste0(path.rds, .)), na.rm=T) #check equivalence of processing
+#ratings.wide %>% write_rds("ratings.wide.rds" %>% paste0(path.rds, .))
