@@ -549,3 +549,4 @@ data.wide %>% gather("lds.type", "lds", c("EDA_Gen_eyes_lds", "EDA_Gen_mn_lds"))
   myGgTheme + theme(
     #legend.position = "none",
     legend.position = c(.87, .87))
+
