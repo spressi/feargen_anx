@@ -37,6 +37,7 @@ requirePackage("DescTools")
   #statistical analysis
   z.max = 2 #winsorize dependent variables to a z value of 2
   q.max = pnorm(z.max * c(-1, 1)) #needed for DescTools::Winsorize function
+  q.max = c(0, 1) #switch off Winsorizing
 }
 
 { # Functions ---------------------------------------------------------------
