@@ -86,7 +86,7 @@ pupil.diff %>% #filter(time <= 4) %>%
 
 
 #grand averages by diagnostic region
-pupil.diag = pupil.avg %>% bind_rows(.id="subject") %>% mutate(time = signal$time, mmChange = signal$mmChange) %>% select(-signal) %>% 
+pupil.diag = pupil.average %>% #pupil.avg %>% bind_rows(.id="subject") %>% mutate(time = signal$time, mmChange = signal$mmChange) %>% select(-signal) %>% 
   group_by(phase, diagnostic, threat, time) %>% summarise(mmChange.se = se(mmChange, na.rm=T), 
                                                           mmChange = mean(mmChange, na.rm=T))
 #all(pupil.diag == read_rds("pupil.diag.rds" %>% paste0(path.rds, .)), na.rm=T) #check equivalence of processing
@@ -128,7 +128,7 @@ pupil.trial.avg = pupil.trial %>% bind_rows(.id="subject") %>% group_by(subject,
 questionnaires_pupil <- questionnaires %>%
   mutate(subject = paste0("vp",ifelse(subject < 10, "0",""),subject))
 
-pupil.subject = pupil.avg %>% bind_rows(.id="subject") %>% mutate(time = signal$time, mmChange = signal$mmChange, change.z = signal$change.z) %>% select(-signal) %>% 
+pupil.subject = pupil.average %>% #pupil.avg %>% bind_rows(.id="subject") %>% mutate(time = signal$time, mmChange = signal$mmChange, change.z = signal$change.z) %>% select(-signal) %>% 
   dplyr::filter(time > .5, time <= 4) %>% group_by(subject, phase, threat, diagnostic, sex) %>% 
   summarise(mmChange = mean(mmChange, na.rm=T), change.z = mean(change.z, na.rm=T)) %>% 
   group_by(subject, phase) %>% mutate(mmChange.z = scale(mmChange))%>%
