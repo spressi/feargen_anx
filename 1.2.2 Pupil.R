@@ -42,7 +42,11 @@ pupil = pupil.avg %>% bind_rows(.id="subject") %>% mutate(time = signal$time, mm
 #all(pupil == read_rds("pupil.rds" %>% paste0(path.rds, .)), na.rm=T) #check equivalence of processing
 #pupil %>% write_rds("pupil.rds" %>% paste0(path.rds, .))
 
+pupil.average <- pupil.avg %>% bind_rows(.id="subject") %>% mutate(time = signal$time, mmChange = signal$mmChange, change.z = signal$change.z) %>% select(-signal)
+#pupil.average %>% write_rds("pupil.avg.rds" %>% paste0(path.rds, .))
+
 #pupil = read_rds("pupil.rds" %>% paste0(path.rds, .))
+#pupil.average = read_rds("pupil.avg.rds" %>% paste0(path.rds, .))
 pupil.diff = pupil %>% pivot_wider(names_from = threat, values_from = mmChange, id_cols = c("phase", "time", "subject")) %>% 
   mutate(`diff.CS+` = `CS+` - `CS-`, `diff.GS1` = `GS1` - `CS-`, `diff.GS2` = `GS2` - `CS-`, `diff.GS3` = `GS3` - `CS-`, `diff.GS4` = `GS4` - `CS-`) %>%
   select(subject, phase, time, starts_with("diff")) %>% 
