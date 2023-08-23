@@ -185,44 +185,44 @@ anova.pupil %>% apa::anova_apa()
 anova.pupil %>% ez.ci()
 
 
-#SPAI Main effect (marginally significant)
-pupil.simple.gen.lvl = pupil.subject %>% group_by(subject, SPAI, STAI) %>% summarise(mmChange = mean(mmChange, na.rm=T), change.z = mean(change.z, na.rm=T))
-pupil.simple.gen.lvl %>% with(cor.test(mmChange, SPAI, alternative="less")) %>% correlation_out()
-pupil.simple.gen.lvl %>% with(cor.test(mmChange, SPAI)) %>% correlation_out()
-print(pupil.spai.plot <- pupil.simple.gen.lvl %>% ggplot(aes(x=SPAI, y=mmChange, color=SPAI, fill=SPAI)) +
-        geom_errorbar(aes(ymin=mmChange-mmChange*1.96, ymax=mmChange+mmChange*1.96), width=spai.width) +
-        stat_smooth(method="lm", color = "black") +
-        #geom_point(size=4, shape=21, color="black") +
-        geom_point(size=4) + 
-        ylab("Pupil Diameter Change (mm)") +
-        scale_color_viridis_c() + scale_fill_viridis_c() + myGgTheme + theme(legend.position = "none"))
-
-
-# Split in HSA/LSA 
-pupil.subject %>%
-  ungroup() %>%
-  summarise(
-    median = median(SPAI)
-  )
-
-pupil.subject.spai = pupil %>% dplyr::filter(phase == "Gen") %>% 
-  left_join(questionnaires_pupil, by="subject") %>%
-  mutate(spai.split = case_when(
-    SPAI >= 2.61 ~ "HSA",
-    SPAI < 2.61 ~ "LSA"
-  ))%>%  
-  group_by(threat, time, spai.split) %>% 
-  summarise(mmChange = mean(mmChange, na.rm=T), change.z = mean(change.z, na.rm=T)) %>% 
-  mutate(time = time %>% as.character() %>% as.numeric()) 
-print(pupil.trialtime.spai.plot <- pupil.subject.spai %>% ggplot(aes(x=time, y=mmChange, color=threat, group=threat, shape=threat)) + 
-        geom_hline(yintercept = 0, linetype="dashed") +
-        #geom_ribbon(aes(ymin=mmChange-mmChange*1.96, ymax=mmChange+mmChange*1.96, fill=threat), color=NA, alpha=.1) +
-        #geom_errorbar(aes(ymin=HRchange-HRchange.se*1.96, ymax=HRchange+HRchange.se*1.96)) +
-        geom_point(size=3, data=subset(pupil.subject.spai, time == 5.5)) + 
-        geom_line() + 
-        facet_wrap(vars(spai.split)) +
-        scale_color_manual(values=colors, labels=c("CS-", paste0("GS", 1:4), "CS+")) + scale_shape_discrete(labels=c("CS-", paste0("GS", 1:4), "CS+")) + scale_fill_manual(values=colors, labels=c("CS-", paste0("GS", 1:4), "CS+")) + 
-        ylab("Change in Pupil Diameter (mm)") + xlab("Trial Time (sec)") + labs(color="Threat", shape="Threat", fill="Threat") + myGgTheme)
+#SPAI Main effect
+# pupil.simple.gen.lvl = pupil.subject %>% group_by(subject, SPAI, STAI) %>% summarise(mmChange = mean(mmChange, na.rm=T), change.z = mean(change.z, na.rm=T))
+# pupil.simple.gen.lvl %>% with(cor.test(mmChange, SPAI, alternative="less")) %>% correlation_out()
+# pupil.simple.gen.lvl %>% with(cor.test(mmChange, SPAI)) %>% correlation_out()
+# print(pupil.spai.plot <- pupil.simple.gen.lvl %>% ggplot(aes(x=SPAI, y=mmChange, color=SPAI, fill=SPAI)) +
+#         geom_errorbar(aes(ymin=mmChange-mmChange*1.96, ymax=mmChange+mmChange*1.96), width=spai.width) +
+#         stat_smooth(method="lm", color = "black") +
+#         #geom_point(size=4, shape=21, color="black") +
+#         geom_point(size=4) + 
+#         ylab("Pupil Diameter Change (mm)") +
+#         scale_color_viridis_c() + scale_fill_viridis_c() + myGgTheme + theme(legend.position = "none"))
+# 
+# 
+# # Split in HSA/LSA 
+# pupil.subject %>%
+#   ungroup() %>%
+#   summarise(
+#     median = median(SPAI)
+#   )
+# 
+# pupil.subject.spai = pupil %>% dplyr::filter(phase == "Gen") %>% 
+#   left_join(questionnaires_pupil, by="subject") %>%
+#   mutate(spai.split = case_when(
+#     SPAI >= 2.61 ~ "HSA",
+#     SPAI < 2.61 ~ "LSA"
+#   ))%>%  
+#   group_by(threat, time, spai.split) %>% 
+#   summarise(mmChange = mean(mmChange, na.rm=T), change.z = mean(change.z, na.rm=T)) %>% 
+#   mutate(time = time %>% as.character() %>% as.numeric()) 
+# print(pupil.trialtime.spai.plot <- pupil.subject.spai %>% ggplot(aes(x=time, y=mmChange, color=threat, group=threat, shape=threat)) + 
+#         geom_hline(yintercept = 0, linetype="dashed") +
+#         #geom_ribbon(aes(ymin=mmChange-mmChange*1.96, ymax=mmChange+mmChange*1.96, fill=threat), color=NA, alpha=.1) +
+#         #geom_errorbar(aes(ymin=HRchange-HRchange.se*1.96, ymax=HRchange+HRchange.se*1.96)) +
+#         geom_point(size=3, data=subset(pupil.subject.spai, time == 5.5)) + 
+#         geom_line() + 
+#         facet_wrap(vars(spai.split)) +
+#         scale_color_manual(values=colors, labels=c("CS-", paste0("GS", 1:4), "CS+")) + scale_shape_discrete(labels=c("CS-", paste0("GS", 1:4), "CS+")) + scale_fill_manual(values=colors, labels=c("CS-", paste0("GS", 1:4), "CS+")) + 
+#         ylab("Change in Pupil Diameter (mm)") + xlab("Trial Time (sec)") + labs(color="Threat", shape="Threat", fill="Threat") + myGgTheme)
 
 #mean scores generalization phase
 pupil.ga.gen = pupil.ga.gen.subj %>% group_by(threat) %>% 
