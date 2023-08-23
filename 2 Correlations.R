@@ -11,11 +11,14 @@ requirePackage("lmerTest")
 #eyes.wide = read_rds("eyes.wide.rds" %>% paste0(path.rds, .)) #or path
 #heart.wide = read_rds("heart.wide.rds" %>% paste0(path.rds, .)) #or path
 #eda.wide = read_rds("eda.wide.rds" %>% paste0(path.rds, .)) #or path
+#pupil.wide = read_rds("pupil.rds" %>% paste0(path.rds, .)) #or path
+
 
 data.wide = full_join(questionnaires, ratings.wide, by="subject") %>% 
   full_join(eyes.wide, by=c("subject", "SPAI", "STAI")) %>% 
   full_join(heart.wide, by="subject") %>% 
-  full_join(eda.wide, by="subject")
+  full_join(eda.wide, by="subject")%>% 
+  full_join(pupil.wide, by="subject")
 
 # data.wide.first.half = full_join(questionnaires, ratings.first.wide, by="subject") %>%
 #   full_join(eyes.wide, by= c("subject", "SPAI", "STAI")) %>%
