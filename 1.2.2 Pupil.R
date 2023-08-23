@@ -359,7 +359,7 @@ for (s in pupil.subject.gen$subject %>% unique()) {
 }
 #names(pupil.gradients.diagnostic) = c("lds", "diff", "level") %>% c(., paste0(., ".z")) %>% {c("subject", paste0("Gen_eyes_", .), paste0("Gen_mn_", .))}
 pupil.gradients = merge(pupil.gradients.simple, pupil.gradients.diagnostic, by="subject") %>% 
-  mutate(subject = subject %>% pupilToNum())
+  mutate(subject = files.pupil %>% pupilToNum())
 names(pupil.gradients)[-1] = "Pup_" %>% paste0(names(pupil.gradients)[-1])
 
 #saveRDS(pupil.gradients, "pupil.rds" %>% paste0(path.rds, .))
