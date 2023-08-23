@@ -358,8 +358,8 @@ for (s in pupil.subject.gen$subject %>% unique()) {
   }
 }
 #names(pupil.gradients.diagnostic) = c("lds", "diff", "level") %>% c(., paste0(., ".z")) %>% {c("subject", paste0("Gen_eyes_", .), paste0("Gen_mn_", .))}
-pupil.gradients = merge(pupil.gradients.simple, pupil.gradients.diagnostic, by="subject") %>% 
-  mutate(subject = files.pupil %>% pupilToNum())
+pupil.gradients = full_join(pupil.gradients.simple, pupil.gradients.diagnostic, by="subject") %>% 
+  mutate(subject = subject %>% codeToNum()) %>% tibble()
 names(pupil.gradients)[-1] = "Pup_" %>% paste0(names(pupil.gradients)[-1])
 
 #saveRDS(pupil.gradients, "pupil.rds" %>% paste0(path.rds, .))
@@ -368,4 +368,3 @@ names(pupil.gradients)[-1] = "Pup_" %>% paste0(names(pupil.gradients)[-1])
 pupil.gradients %>% pull(Pup_Gen_all_lds) %>% t.test(mu = 0, alternative="greater") %>% apa::t_apa(es_ci=T)
 #pupil.gradients %>% pull(Pup_Gen_all_lds) %>% mean() %>% signif(3) %>% paste0("M = ", .)
 pupil.gradients %>% summarise(M = Pup_Gen_all_lds %>% mean(), SD = Pup_Gen_all_lds %>% sd()) %>% tibble()
-
