@@ -1,8 +1,6 @@
 if(!require(tidyverse)) install.packages("tidyverse"); library(tidyverse)
-requirePackage("openintro")
-requirePackage("mediation")
-#remove.packages("openintro")
-#remove.packages("mediation")
+#requirePackage("openintro", load=F)
+requirePackage("mediation", load=F)
 #requirePackage("lm.beta")
 
 data.wide.z <- data.wide %>%
@@ -25,9 +23,9 @@ summary(path_b_c)
 
 # mediation (which part of the effect x on y runs through mediator, i.e. path a and b)
 
-results <- mediate(path_a, path_b_c, 
-                   treat = "SPAI.z", mediator = "Gen_all_ms.z", 
-                   boot = TRUE)
+results <- mediation::mediate(path_a, path_b_c, 
+                              treat = "SPAI.z", mediator = "Gen_all_ms.z", 
+                              boot = TRUE)
 summary(results)
 # ACME = average causal mediation effect (indirect effect, path a and b)
 # ADE = average direct effect (direct effect controlling for effect of mediator)
@@ -48,9 +46,7 @@ summary(path_b_c)
 
 # mediation (which part of the effect x on y runs through mediator, i.e. path a and b)
 
-results <- mediate(path_a, path_b_c, 
-                   treat = "SPAI.z", mediator = "Gen_all_ms.non.z", 
-                   boot = TRUE)
+results <- mediation::mediate(path_a, path_b_c, 
+                              treat = "SPAI.z", mediator = "Gen_all_ms.non.z", 
+                              boot = TRUE)
 summary(results)
-
-
