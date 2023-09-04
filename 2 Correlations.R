@@ -4,7 +4,6 @@ if(!require(tidyverse)) install.packages("tidyverse"); library(tidyverse)
 requirePackage("lme4")
 requirePackage("lmerTest")
 
-#TODO separate by first and second half? Rather too much exploration already
 
 #ratings.wide = read_rds("ratings.wide.rds" %>% paste0(path.rds, .)) #or path
 #eyes.wide = read_rds("eyes.wide.rds" %>% paste0(path.rds, .)) #or path
@@ -19,6 +18,7 @@ data.wide = full_join(questionnaires, ratings.wide, by="subject") %>%
   full_join(heart.wide, by="subject") %>% 
   full_join(eda.wide, by="subject")
 
+#separate by first and second half? Rather too much exploration already
 # data.wide.first.half = full_join(questionnaires, ratings.first.wide, by="subject") %>%
 #   full_join(eyes.wide, by= c("subject", "SPAI", "STAI")) %>%
 #   full_join(heart.wide, by="subject") #%>%
