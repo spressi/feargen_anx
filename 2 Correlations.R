@@ -5,20 +5,19 @@ requirePackage("lme4")
 requirePackage("lmerTest")
 
 #TODO separate by first and second half? Rather too much exploration already
-#TODO pupil gradients :)
 
 #ratings.wide = read_rds("ratings.wide.rds" %>% paste0(path.rds, .)) #or path
 #eyes.wide = read_rds("eyes.wide.rds" %>% paste0(path.rds, .)) #or path
+#pupil.wide = read_rds("pupil.rds" %>% paste0(path.rds, .)) #or path
 #heart.wide = read_rds("heart.wide.rds" %>% paste0(path.rds, .)) #or path
 #eda.wide = read_rds("eda.wide.rds" %>% paste0(path.rds, .)) #or path
-#pupil.wide = read_rds("pupil.rds" %>% paste0(path.rds, .)) #or path
 
 
 data.wide = full_join(questionnaires, ratings.wide, by="subject") %>% 
   full_join(eyes.wide, by=c("subject", "SPAI", "STAI")) %>% 
+  full_join(pupil.wide, by="subject") %>% 
   full_join(heart.wide, by="subject") %>% 
-  full_join(eda.wide, by="subject")%>% 
-  full_join(pupil.wide, by="subject")
+  full_join(eda.wide, by="subject")
 
 # data.wide.first.half = full_join(questionnaires, ratings.first.wide, by="subject") %>%
 #   full_join(eyes.wide, by= c("subject", "SPAI", "STAI")) %>%
@@ -400,6 +399,9 @@ print(correl.dwell.plot <- data.wide %>% filter(subject %in% exclusions.eye.dwel
 
 #cowplot::plot_grid(correl.dwell.plot, correl.ms.plot, ncol=1, labels="auto") #Figure 6 (preprint) or 5 (manuscript)
 
+
+# Pupil -------------------------------------------------------------------
+#TODO
 
 # Heartrate -----------------------------------------------------------------
 #Heartrate: LDS & Fixations

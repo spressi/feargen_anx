@@ -358,13 +358,13 @@ for (s in pupil.subject.gen$subject %>% unique()) {
   }
 }
 #names(pupil.gradients.diagnostic) = c("lds", "diff", "level") %>% c(., paste0(., ".z")) %>% {c("subject", paste0("Gen_eyes_", .), paste0("Gen_mn_", .))}
-pupil.gradients = full_join(pupil.gradients.simple, pupil.gradients.diagnostic, by="subject") %>% 
+pupil.wide = full_join(pupil.gradients.simple, pupil.gradients.diagnostic, by="subject") %>% 
   mutate(subject = subject %>% codeToNum()) %>% tibble()
-names(pupil.gradients)[-1] = "Pup_" %>% paste0(names(pupil.gradients)[-1])
+names(pupil.wide)[-1] = "Pup_" %>% paste0(names(pupil.wide)[-1])
 
-#saveRDS(pupil.gradients, "pupil.rds" %>% paste0(path.rds, .))
+#pupil.wide %>% write_rds("pupil.rds" %>% paste0(path.rds, .))
 
 # Significance of gradients -----------------------------------------------
-pupil.gradients %>% pull(Pup_Gen_all_lds) %>% t.test(mu = 0, alternative="greater") %>% apa::t_apa(es_ci=T)
-#pupil.gradients %>% pull(Pup_Gen_all_lds) %>% mean() %>% signif(3) %>% paste0("M = ", .)
-pupil.gradients %>% summarise(M = Pup_Gen_all_lds %>% mean(), SD = Pup_Gen_all_lds %>% sd()) %>% tibble()
+pupil.wide %>% pull(Pup_Gen_all_lds) %>% t.test(mu = 0, alternative="greater") %>% apa::t_apa(es_ci=T)
+#pupil.wide %>% pull(Pup_Gen_all_lds) %>% mean() %>% signif(3) %>% paste0("M = ", .)
+pupil.wide %>% summarise(M = Pup_Gen_all_lds %>% mean(), SD = Pup_Gen_all_lds %>% sd()) %>% tibble()
