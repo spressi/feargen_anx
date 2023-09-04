@@ -400,8 +400,75 @@ print(correl.dwell.plot <- data.wide %>% filter(subject %in% exclusions.eye.dwel
 #cowplot::plot_grid(correl.dwell.plot, correl.ms.plot, ncol=1, labels="auto") #Figure 6 (preprint) or 5 (manuscript)
 
 
-# Pupil -------------------------------------------------------------------
-#TODO
+# Pupil (no effects)-----------------------------------------------------
+#Pupil: LDS & Dwell
+reg.pup.dwell = data.wide %>% gather("lds.type", "lds", c("Pup_Gen_eyes_lds", "Pup_Gen_mn_lds")) %>% 
+  gather("dwell.type", "dwell", c("Gen_eyes_dwell", "Gen_mn_dwell")) %>%
+  select(subject:STAI, lds.type:dwell) %>% 
+  mutate(lds.type = ifelse(grepl("_eyes_", lds.type), "Eyes", "Mouth/Nose") %>% as.factor(),
+         dwell.type = ifelse(grepl("_eyes_", dwell.type), "Eyes", "Mouth/Nose") %>% as.factor()) %>% 
+  filter(lds.type == dwell.type) %>% 
+  #mutate(dwell.type = factor(dwell.type)) %>% 
+  mutate(dwell.type = ifelse(dwell.type=="Eyes", -1, 1)) %>% 
+  mutate(lds = scale(lds), dwell = scale(dwell), SPAI = scale(SPAI), STAI = scale(STAI)) %>% #z-transform
+  lmer(lds ~ dwell*dwell.type*SPAI + (1|subject), .) 
+  #lmer(lds ~ dwell*dwell.type*STAI + (1|subject), .) 
+  #lmer(lds ~ dwell*dwell.type + (1|subject), .) 
+
+reg.pup.dwell %>% summary() %>% print()
+reg.pup.dwell %>% lmer.ci()
+#reg.pup.dwell %>% lmer.ci(twotailed = F)
+
+data.wide %>% gather("lds.type", "lds", c("Pup_Gen_eyes_lds", "Pup_Gen_mn_lds")) %>% 
+  gather("dwell.type", "dwell", c("Gen_eyes_dwell", "Gen_mn_dwell")) %>%
+  select(lds.type:dwell) %>% 
+  mutate(lds.type = ifelse(grepl("_eyes_", lds.type), "Eyes", "Mouth/Nose") %>% as.factor(),
+         dwell.type = ifelse(grepl("_eyes_", dwell.type), "Eyes", "Mouth/Nose") %>% as.factor()) %>% 
+  filter(lds.type == dwell.type) %>% 
+  ggplot(aes(x=dwell, y=lds, color=dwell.type, fill=dwell.type)) +
+  geom_smooth(method="lm", size=1.5, alpha = .2) +
+  geom_point(size=2) +
+  ylab("Linear Deviation Score (Pupil)") + xlab("Diagnostic Dwell (%)") + labs(color="Diagnostic", fill="Diagnostic") +
+  myGgTheme + theme(
+    #legend.position = "none",
+    legend.position = c(1-.87, .87)
+  )
+
+
+#Pupil: LDS & Time to diagnostic ROI
+reg.pup.ms = data.wide %>% gather("lds.type", "lds", c("Pup_Gen_eyes_lds", "Pup_Gen_mn_lds")) %>% 
+  gather("ms.diag.type", "ms.diag", c("Gen_eyes_ms", "Gen_mn_ms")) %>%
+  select(subject:STAI, lds.type:ms.diag) %>% 
+  mutate(ms.diag = sqrt(ms.diag),
+         lds.type = ifelse(grepl("_eyes_", lds.type), "Eyes", "Mouth/Nose") %>% as.factor(),
+         ms.diag.type = ifelse(grepl("_eyes_", ms.diag.type), "Eyes", "Mouth/Nose") %>% as.factor()) %>% 
+  na.omit() %>% 
+  filter(lds.type == ms.diag.type) %>% 
+  mutate(ms.diag.type = ifelse(ms.diag.type=="Eyes", -1, 1)) %>% 
+  mutate(lds = scale(lds), ms.diag = scale(ms.diag), SPAI = scale(SPAI), STAI = scale(STAI)) %>% #z-transform
+  lmer(lds ~ ms.diag*ms.diag.type*SPAI + (1|subject), .) 
+  #lmer(lds ~ ms.diag*ms.diag.type*STAI + (1|subject), .) 
+  #lmer(lds ~ ms.diag*ms.diag.type + (1|subject), .) 
+
+reg.pup.ms %>% summary() %>% print()
+reg.pup.ms %>% lmer.ci()
+reg.pup.ms %>% lmer.ci(twotailed = F)
+
+data.wide %>% gather("lds.type", "lds", c("Pup_Gen_eyes_lds", "Pup_Gen_mn_lds")) %>% 
+  gather("ms.diag.type", "ms.diag", c("Gen_eyes_ms", "Gen_mn_ms")) %>%
+  select(lds.type:ms.diag) %>% 
+  mutate(lds.type = ifelse(grepl("_eyes_", lds.type), "Eyes", "Mouth/Nose") %>% as.factor(),
+         ms.diag.type = ifelse(grepl("_eyes_", ms.diag.type), "Eyes", "Mouth/Nose") %>% as.factor()) %>% 
+  filter(lds.type == ms.diag.type) %>% 
+  ggplot(aes(x=sqrt(ms.diag), y=lds, color=ms.diag.type, fill=ms.diag.type)) +
+  geom_smooth(method="lm", size=1.5, alpha = .2) +
+  #stat_smooth(method="lm", size=1.5, alpha = .2, fullrange = T) +
+  geom_point(size=2) +
+  ylab("Linear Deviation Score (Pupil)") + xlab(expression("Time to Diagnostic ROI (" * sqrt(ms) * ")")) + labs(color="Diagnostic", fill="Diagnostic") +
+  myGgTheme + theme(
+    #legend.position = "none",
+    legend.position = c(.87, .87))
+
 
 # Heartrate -----------------------------------------------------------------
 #Heartrate: LDS & Fixations
