@@ -24,7 +24,7 @@ requirePackage = function(name, load=T) {
   exclusions = c(
      5, #pain rating < 4
     40, #different faces between discrimination training and main experiment
-    60, #test subject for new experimenter (paradigm not performed)
+    #60, #test subject for new experimenter (paradigm not performed, i.e., no data)
     88, #experiment aborted after discrimination task
     91  #pain rating < 4
   ) %>% unique() %>% sort()
