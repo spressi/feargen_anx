@@ -53,7 +53,7 @@ requirePackage = function(name, load=T) {
   sample.rate = 500 #samples/second
   trial.duration = sample.rate * trialEnd / 1000 #seconds
   
-  #startID = "CONDITION" #identifier for trial start messages
+  #startID = "CONDITION" #identifier for trial start messages (was not sent in presentation, only in PsychoPy version)
   expoID = "Stimulus " #identifier for exposition start messages
   stimExt = ".jpg"
   
