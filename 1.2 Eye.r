@@ -41,6 +41,11 @@ requirePackage("DescTools")
 }
 
 { # Functions ---------------------------------------------------------------
+  toEdf = function(subjectNums, digits=2, prefix="vp", postfix=".edf") {
+    subjectNums %>% formatC(width=digits, format="d", flag="0") %>% #add leading zeros
+      paste0(prefix, ., postfix) #add pre- & postfix
+  }
+  
   outlier_remove <- function(x, z=3) {
     # Remove outlier iteratively
     insample = 1 - is.na(x) #insample <- rep(1,length(x)); insample[is.na(x)] <- 0
@@ -235,6 +240,21 @@ requirePackage("DescTools")
                                        block==3 ~ gen1End-.5,
                                        TRUE ~ 0))
     return(messages)
+  }
+  
+  loadSaccades = function(filePath) {
+    #saccades = read_delim(filePath, delim="\t", col_names=F, skip=1, locale=locale(decimal_mark=","), na=".", show_col_types=F) #read.table(filePath, skip=1, dec=",", sep="\t", na.strings=".")
+    #names(saccades) = c("subject", "trial", "blink", "start", "end", "x.start", "y.start", "x.end", "y.end")
+    saccades = read_delim(filePath, delim="\t", locale=locale(decimal_mark=","), na=".", show_col_types=F) %>% 
+      rename(subject = RECORDING_SESSION_LABEL, trial = TRIAL_LABEL, start = CURRENT_SAC_START_TIME, end = CURRENT_SAC_END_TIME, x.start = CURRENT_SAC_START_X, y.start = CURRENT_SAC_START_Y, x.end = CURRENT_SAC_END_X, y.end = CURRENT_SAC_END_Y, blink = CURRENT_SAC_CONTAINS_BLINK)
+    saccades = saccades %>% separate("subject", c("subject", "block")) %>% 
+      mutate(subject = subject %>% sub("vp", "", .) %>% as.integer(),
+             block = block %>% as.numeric(), 
+             trial = trial %>% sub("Trial: ","", .) %>% as.numeric(),
+             trial = trial + case_when(block==2 ~ acqEnd-.5,
+                                       block==3 ~ gen1End-.5,
+                                       TRUE ~ 0))
+    return(saccades)
   }
   
   plotRoi = function(roi, matrixRoi=T) {
@@ -732,6 +752,75 @@ eye = eye %>% filter(subject %in% vpn.eye) %>% merge(questionnaires, by="subject
 
 #all(eye == read_rds("eye.rds" %>% paste0(path.rds, .)), na.rm=T) #check equivalence of processing
 #eye %>% write_rds("eye.rds" %>% paste0(path.rds, .))
+
+# Data Quality ---------------------------------------------------------------
+
+#Accuracy
+eye.accuracy = tibble()
+for (file in list.files(paste0(path.eye, "messages/"), pattern="*.asc")) {
+  calibration.temp = read_delim(paste0(path.eye, "messages/", file), delim=" ", col_names=F, skip=11) %>% mutate(index = 1:n())
+  eye.accuracy = calibration.temp %>% filter(X3 == "VALIDATION", X7 %>% is.na() == F) %>% 
+    mutate(lag = lead(index) - index, lag = ifelse(is.na(lag), index, lag)) %>% #find the last instances before a big lag (and also take very last instance)
+    arrange(lag) %>% tail(2) %>% arrange(index) %>% 
+    mutate(X7 = X7 %>% trimws()) %>% 
+    separate(X7, into=paste0("val", 1:11), sep="\\s+") %>% 
+    mutate(subject = file, block = 1:n()) %>% 
+    #pivot_wider(id_cols = subject, names_prefix = "validation", names_from = block, values_from = val3) %>% #wide format
+    mutate(validation = val3 %>% as.double()) %>% select(subject, block, validation) %>% #long format
+    bind_rows(eye.accuracy, .)
+}
+eye.accuracy %>% summarise(inaccuracy.m = mean(validation), inaccuracy.sd = sd(validation))
+
+#Data Loss
+#eye = readRDS("eye.rds" %>% paste0(path.rds, .))
+saccades = loadSaccades(paste0(path.eye, "Saccades.txt"))
+eye.dataloss = tibble()
+#for (s in eye$subject %>% unique() %>% toEdf(postfix = "")) {
+for (s in eye$subject %>% unique()) {
+  msg.vp = messages %>% filter(subject == s)
+  fix.vp = fixations %>% filter(subject == s)
+  sac.vp = saccades %>% filter(subject == s)
+  
+  trials.min = min(fix.vp$trial)
+  trials.max = max(fix.vp$trial)
+  trials.n = trials.max - trials.min + 1
+  
+  for (t in trials.min:trials.max) {
+    msg.vp.trial = msg.vp %>% filter(trial == t)
+    fix.vp.trial = fix.vp %>% filter(trial == t)
+    sac.vp.trial = sac.vp %>% filter(trial == t)
+    
+    # include <- grep(startID, msg.vp.trial$event)
+    # if (length(include) > 0) {
+    MsgIndex = grep(expoID, msg.vp.trial$event)
+    if (length(MsgIndex) > 0) {
+      onset <- msg.vp.trial$time[MsgIndex]
+      #condition = msg.vp.trial$event[include]; condition = condition %>% substring(nchar(condition)-2+1) %>% as.numeric()
+      
+      # Subtract onset from startamps
+      fix.vp.trial = fix.vp.trial %>% 
+        mutate(start = start - onset, end = end - onset, #center to trial onset
+               start = ifelse(start < 0, 0, start), #cut times that exceed analysis limits
+               end = ifelse(end > ratingStart, ratingStart, end), #cut times that exceed analysis limits
+               dur = end - start) %>% filter(dur > 0)
+      sac.vp.trial = sac.vp.trial %>% 
+        mutate(start = start - onset, end = end - onset,
+               start = ifelse(start < 0, 0, start),
+               end = ifelse(end > ratingStart, ratingStart, end),
+               dur = end - start) %>% filter(dur > 0) %>% 
+        filter(blink==F)
+      
+      eye.dataloss = tibble(subject = s, trial = t,
+                            valid.abs = fix.vp.trial$dur %>% sum() + sac.vp.trial$dur %>% sum(),
+                            valid = valid.abs / ratingStart) %>% 
+        bind_rows(eye.dataloss, .)
+    }
+  }
+}
+
+eye.dataloss %>% group_by(subject) %>% summarise(valid.se = se(valid), valid = mean(valid)) %>% 
+  summarise(min = min(1 - valid), max = max(1 - valid), sd = sd(1 - valid), se = se(1 - valid), m = mean(1 - valid))
+
 
 # Prepare data for analyses -----------------------------------------------
 #eye = read_rds("eye.rds" %>% paste0(path.rds, .))
