@@ -1024,6 +1024,7 @@ print(eye.main.ms <- eye.diagnosticity.ms.subj.analysis %>% group_by(diagnostic,
 #ROI x Diagnosticity
 eye.diagnosticity.ms.analysis %>% group_by(Diagnosticity, ROI) %>% summarise(ms.m=mean(ms, na.rm=T), ms.sd = sd(ms, na.rm=T))
 #it takes particularly long to look into non-diagnostic mouth/nose but not for non-diagnostic eyes
+eye.diagnosticity.ms.analysis %>% group_by(diagnostic, ROI) %>% summarise(ms.m=mean(ms, na.rm=T)) %>% pivot_wider(names_from=ROI, values_from=ms.m) %>% transmute(eyeBias = `Mouth/Nose` - Eyes) %>% as.data.frame()
 
 #SPAI main effect
 eye.diagnosticity.ms.spai = eye.diagnosticity.ms.analysis %>% 
