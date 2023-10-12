@@ -309,7 +309,7 @@ print(correl.ms.staiInteraction.plot <- correl.ms.staiInteraction %>%
 #       #legend.position = c(.5, 1-.87))
 # )
 
-#Ratings: LDS & Time to diagnostic ROI
+#Ratings: LDS & Time to diagnostic ROI (check that sqrt did not totally skew results)
 reg.lds.ms = data.wide %>% filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
   gather("lds.type", "lds", c("Gen_eyes_lds", "Gen_mn_lds")) %>% 
   gather("ms.diag.type", "ms.diag", c("Gen_eyes_ms", "Gen_mn_ms")) %>%
@@ -369,26 +369,26 @@ reg.lds.dwell %>% lmer.ci()
 #reg.lds.dwell %>% lmer.ci(twotailed = F)
 
 #dwell*dwell.type
-print(correl.dwell.plot <- data.wide %>% filter(subject %in% exclusions.eye.dwell == F) %>% #manual exclusion because of extreme dwell
-        gather("lds.type", "lds", c("Gen_eyes_lds", "Gen_mn_lds")) %>% 
-        gather("dwell.type", "dwell", c("Gen_eyes_dwell", "Gen_mn_dwell")) %>%
-        select(subject:STAI, lds.type:dwell) %>% 
-        mutate(lds.type = ifelse(grepl("_eyes_", lds.type), "Eyes", "Mouth/Nose") %>% as.factor(),
-               dwell.type = ifelse(grepl("_eyes_", dwell.type), "Eyes", "Mouth/Nose") %>% as.factor()) %>% 
-        filter(lds.type == dwell.type) %>% 
-        ggplot(aes(x=dwell, y=lds, color=dwell.type, fill=dwell.type, shape=dwell.type)) +
-        #geom_line(aes(group=subject), color="black", linetype="dashed") + 
-        geom_smooth(method="lm", size=1.5, alpha = .2) +
-        geom_point(size=4, alpha=.8) + 
-        ylab("Linear Deviation Score") + xlab("Diagnostic Dwell (%)") + labs(color="Diagnostic", fill="Diagnostic", shape="Diagnostic") +
-        scale_shape_manual(values=c(16, 15)) +
-        myGgTheme +
-        theme(
-          #legend.position = "none",
-          #legend.position = c(.87, .87))
-          #legend.position = c(1-.87, 1-.87))
-          legend.position = c(1-.87, .87))
-)
+# print(correl.dwell.plot <- data.wide %>% filter(subject %in% exclusions.eye.dwell == F) %>% #manual exclusion because of extreme dwell
+#         gather("lds.type", "lds", c("Gen_eyes_lds", "Gen_mn_lds")) %>% 
+#         gather("dwell.type", "dwell", c("Gen_eyes_dwell", "Gen_mn_dwell")) %>%
+#         select(subject:STAI, lds.type:dwell) %>% 
+#         mutate(lds.type = ifelse(grepl("_eyes_", lds.type), "Eyes", "Mouth/Nose") %>% as.factor(),
+#                dwell.type = ifelse(grepl("_eyes_", dwell.type), "Eyes", "Mouth/Nose") %>% as.factor()) %>% 
+#         filter(lds.type == dwell.type) %>% 
+#         ggplot(aes(x=dwell, y=lds, color=dwell.type, fill=dwell.type, shape=dwell.type)) +
+#         #geom_line(aes(group=subject), color="black", linetype="dashed") + 
+#         geom_smooth(method="lm", size=1.5, alpha = .2) +
+#         geom_point(size=4, alpha=.8) + 
+#         ylab("Linear Deviation Score") + xlab("Diagnostic Dwell (%)") + labs(color="Diagnostic", fill="Diagnostic", shape="Diagnostic") +
+#         scale_shape_manual(values=c(16, 15)) +
+#         myGgTheme +
+#         theme(
+#           #legend.position = "none",
+#           #legend.position = c(.87, .87))
+#           #legend.position = c(1-.87, 1-.87))
+#           legend.position = c(1-.87, .87))
+# )
 
 #STAI*dwell.type
 # print(correl.stai.plot <- data.wide %>% gather("lds.type", "lds", c("Gen_eyes_lds", "Gen_mn_lds")) %>% 
