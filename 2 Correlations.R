@@ -126,13 +126,28 @@ reg.lds.ms.sqr = data.wide %>% filter(subject %in% exclusions.eye.ms == F) %>% #
   filter(lds.type == ms.diag.type) %>% 
   mutate(ms.diag.type = ifelse(ms.diag.type=="Eyes", -1, 1)) %>% 
   mutate(lds = scale(lds), ms.diag = scale(ms.diag), SPAI = scale(SPAI), STAI = scale(STAI)) %>% #z-transform
-  #lmer(lds ~ ms.diag*ms.diag.type*SPAI + (1|subject), .)
-  lmer(lds ~ ms.diag*ms.diag.type*STAI + (1|subject), .)
-  #lmer(lds ~ ms.diag*ms.diag.type + (1|subject), .)
+  lmer(lds ~ ms.diag*ms.diag.type*SPAI + (1|subject), .)
+#lmer(lds ~ ms.diag*ms.diag.type + (1|subject), .)
 
 reg.lds.ms.sqr %>% summary() %>% print()
 reg.lds.ms.sqr %>% lmer.ci() 
 #reg.lds.ms.sqr %>% lmer.ci(twotailed = F)
+
+reg.lds.ms.sqr.stai = data.wide %>% filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
+  gather("lds.type", "lds", c("Gen_eyes_lds", "Gen_mn_lds")) %>% 
+  gather("ms.diag.type", "ms.diag", c("Gen_eyes_ms", "Gen_mn_ms")) %>%
+  select(subject:STAI, lds.type:ms.diag) %>% 
+  mutate(ms.diag = sqrt(ms.diag),
+         lds.type = ifelse(grepl("_eyes_", lds.type), "Eyes", "Mouth/Nose") %>% as.factor(),
+         ms.diag.type = ifelse(grepl("_eyes_", ms.diag.type), "Eyes", "Mouth/Nose") %>% as.factor()) %>% 
+  filter(lds.type == ms.diag.type) %>% 
+  mutate(ms.diag.type = ifelse(ms.diag.type=="Eyes", -1, 1)) %>% 
+  mutate(lds = scale(lds), ms.diag = scale(ms.diag), SPAI = scale(SPAI), STAI = scale(STAI)) %>% #z-transform
+  lmer(lds ~ ms.diag*ms.diag.type*STAI + (1|subject), .)
+
+reg.lds.ms.sqr.stai %>% summary() %>% print()
+reg.lds.ms.sqr.stai %>% lmer.ci() 
+#reg.lds.ms.sqr.stai %>% lmer.ci(twotailed = F)
 
 #ms.diag main effect
 data.wide %>% with(cor.test(Gen_all_lds, Gen_all_ms, alternative="less")) %>% correlation_out()  #apa::cor_apa(r_ci=T)
