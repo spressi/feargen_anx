@@ -133,22 +133,6 @@ reg.lds.ms.sqr %>% summary() %>% print()
 reg.lds.ms.sqr %>% lmer.ci() 
 #reg.lds.ms.sqr %>% lmer.ci(twotailed = F)
 
-reg.lds.ms.sqr.stai = data.wide %>% filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
-  gather("lds.type", "lds", c("Gen_eyes_lds", "Gen_mn_lds")) %>% 
-  gather("ms.diag.type", "ms.diag", c("Gen_eyes_ms", "Gen_mn_ms")) %>%
-  select(subject:STAI, lds.type:ms.diag) %>% 
-  mutate(ms.diag = sqrt(ms.diag),
-         lds.type = ifelse(grepl("_eyes_", lds.type), "Eyes", "Mouth/Nose") %>% as.factor(),
-         ms.diag.type = ifelse(grepl("_eyes_", ms.diag.type), "Eyes", "Mouth/Nose") %>% as.factor()) %>% 
-  filter(lds.type == ms.diag.type) %>% 
-  mutate(ms.diag.type = ifelse(ms.diag.type=="Eyes", -1, 1)) %>% 
-  mutate(lds = scale(lds), ms.diag = scale(ms.diag), SPAI = scale(SPAI), STAI = scale(STAI)) %>% #z-transform
-  lmer(lds ~ ms.diag*ms.diag.type*STAI + (1|subject), .)
-
-reg.lds.ms.sqr.stai %>% summary() %>% print()
-reg.lds.ms.sqr.stai %>% lmer.ci() 
-#reg.lds.ms.sqr.stai %>% lmer.ci(twotailed = F)
-
 #ms.diag main effect
 data.wide %>% with(cor.test(Gen_all_lds, Gen_all_ms, alternative="less")) %>% correlation_out()  #apa::cor_apa(r_ci=T)
 
@@ -172,6 +156,47 @@ print(correl.ms.plot <- data.wide %>% filter(subject %in% exclusions.eye.ms == F
           legend.position = c(.87, .87))
           #legend.position = c(.5, 1-.87))
 )
+
+#ms.diag:ms.diag.type:SPAI
+correl.ms.spaiInteraction = data.wide %>% filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
+  gather("lds.type", "lds", c("Gen_eyes_lds", "Gen_mn_lds")) %>% 
+  gather("ms.diag.type", "ms.diag", c("Gen_eyes_ms", "Gen_mn_ms")) %>%
+  select(subject:SPAI, lds.type:ms.diag) %>% 
+  mutate(lds.type = ifelse(grepl("_eyes_", lds.type), "Eyes", "Mouth/Nose") %>% as.factor(),
+         ms.diag.type = ifelse(grepl("_eyes_", ms.diag.type), "Eyes", "Mouth/Nose") %>% as.factor()) %>% 
+  filter(lds.type == ms.diag.type) %>% 
+  mutate(spai.group = ifelse(SPAI > median(SPAI, na.rm=T), "high", "low") %>% factor(levels=c("low", "high")))
+correl.ms.spaiInteraction %>% summarise(rtest = cor.test(lds, SPAI) %>% correlation_out(returnString=T), 
+                                        .by=c("spai.group", "ms.diag.type")) %>% arrange(spai.group)
+print(correl.ms.spaiInteraction.plot <- correl.ms.spaiInteraction %>% 
+        ggplot(aes(x=SPAI, y=lds, color=ms.diag.type, fill=ms.diag.type, shape=ms.diag.type)) +
+        facet_wrap(vars(spai.group), scales="free_x") +
+        #facet_grid(rows=vars(ms.diag.type), cols=vars(spai.group), scales="free_x") +
+        geom_smooth(method="lm", size=1.5, alpha = .2) +
+        #stat_smooth(method="lm", size=1.5, alpha = .2, fullrange = T) +
+        geom_point(size=4, alpha=.8) + 
+        ylab("Linear Deviation Score") + labs(color="Diagnostic", fill="Diagnostic", shape="Diagnostic") +
+        scale_shape_manual(values=c(16, 15)) +
+        myGgTheme
+)
+#only for low anxiety & stimuli with diagnostic eyes: correlation descriptively negative (as expected for all groups)
+
+#STAI
+reg.lds.ms.sqr.stai = data.wide %>% filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
+  gather("lds.type", "lds", c("Gen_eyes_lds", "Gen_mn_lds")) %>% 
+  gather("ms.diag.type", "ms.diag", c("Gen_eyes_ms", "Gen_mn_ms")) %>%
+  select(subject:STAI, lds.type:ms.diag) %>% 
+  mutate(ms.diag = sqrt(ms.diag),
+         lds.type = ifelse(grepl("_eyes_", lds.type), "Eyes", "Mouth/Nose") %>% as.factor(),
+         ms.diag.type = ifelse(grepl("_eyes_", ms.diag.type), "Eyes", "Mouth/Nose") %>% as.factor()) %>% 
+  filter(lds.type == ms.diag.type) %>% 
+  mutate(ms.diag.type = ifelse(ms.diag.type=="Eyes", -1, 1)) %>% 
+  mutate(lds = scale(lds), ms.diag = scale(ms.diag), SPAI = scale(SPAI), STAI = scale(STAI)) %>% #z-transform
+  lmer(lds ~ ms.diag*ms.diag.type*STAI + (1|subject), .)
+
+reg.lds.ms.sqr.stai %>% summary() %>% print()
+reg.lds.ms.sqr.stai %>% lmer.ci() 
+#reg.lds.ms.sqr.stai %>% lmer.ci(twotailed = F)
 
 #STAI main effect
 data.wide %>% with(cor.test(Gen_all_lds, STAI, alternative="less")) %>% correlation_out()  #apa::cor_apa(r_ci=T)
@@ -197,7 +222,7 @@ print(correl.ms.stai.plot <- data.wide %>% filter(subject %in% exclusions.eye.ms
       #legend.position = c(.5, 1-.87))
 )
 
-#interaction
+#ms.diag:ms.diag.type:STAI
 correl.ms.staiInteraction = data.wide %>% filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
   gather("lds.type", "lds", c("Gen_eyes_lds", "Gen_mn_lds")) %>% 
   gather("ms.diag.type", "ms.diag", c("Gen_eyes_ms", "Gen_mn_ms")) %>%
