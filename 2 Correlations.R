@@ -192,7 +192,7 @@ correl.ms.staiInteraction = data.wide %>% filter(subject %in% exclusions.eye.ms 
   filter(lds.type == ms.diag.type) %>% 
   mutate(stai.group = ifelse(STAI > median(STAI, na.rm=T), "high", "low") %>% factor(levels=c("low", "high")))
 correl.ms.staiInteraction %>% summarise(rtest = cor.test(lds, STAI) %>% correlation_out(returnString=T), 
-                                        .by=c("ms.diag.type", "stai.group"))
+                                        .by=c("stai.group", "ms.diag.type")) %>% arrange(stai.group)
 print(correl.ms.staiInteraction.plot <- correl.ms.staiInteraction %>% 
         ggplot(aes(x=STAI, y=lds, color=ms.diag.type, fill=ms.diag.type, shape=ms.diag.type)) +
         facet_wrap(vars(stai.group), scales="free_x") +
