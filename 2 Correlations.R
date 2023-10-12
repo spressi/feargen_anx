@@ -624,6 +624,12 @@ print(reg.ms.hr.spai.plot <- heart.ms %>% group_by(subject) %>%
         myGgTheme + scale_color_viridis_c()
 )
 
+heart.ms %>% mutate(SPAI.group = ifelse(SPAI > median(SPAI, na.rm=T), "high", "low")) %>% 
+  summarise(cor.test(lds, ms.diag) %>% apa::cor_apa(r_ci=T, print=F), .by=SPAI.group)
+#simple correlations show a less balanced picture because we have way more subjects with low anxiety (skewed distribution)
+#for low social anxiety: faster diagnostic dwell <=> MORE fear generalization (LESS heart rate DECELERATION)
+#TODO visualize gradients by median split (cf. scripts of first study after review)
+
 
 #SPAI x ms.diag.type
 print(data.wide %>% filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
@@ -647,7 +653,9 @@ print(data.wide %>% filter(subject %in% exclusions.eye.ms == F) %>% #manual excl
 )
 data.wide %>% with(cor.test(HR_Gen_eyes_lds, SPAI, alternative="two.sided")) %>% correlation_out()
 data.wide %>% with(cor.test(HR_Gen_mn_lds, SPAI, alternative="two.sided")) %>% correlation_out()
-
+#correlation SPAI & heart LDS: high generalization <=> high anxiety for diagnostic eyes
+#                              low  generalization <=> high anxiety for diagnostic mouth/nose
+#interpretation complicated by biphasic heart rate pattern of highly anxious participants
 
 
 # EDA (no effects) --------------------------------------
