@@ -933,7 +933,9 @@ print(eye.main.ms <- eye.diagnosticity.ms.subj.analysis %>% group_by(diagnostic,
         ylab("Latency to ROI (sec)") + xlab("Diagnostic Region") + myGgTheme)
 
 #ROI x Diagnosticity
-eye.diagnosticity.ms.analysis %>% group_by(Diagnosticity, ROI) %>% summarise(ms.m=mean(ms, na.rm=T), ms.sd = sd(ms, na.rm=T))
+eye.diagnosticity.ms.analysis %>% group_by(ROI) %>% summarise(ms.m=mean(ms, na.rm=T), ms.sd = sd(ms, na.rm=T))%>% as.data.frame(.) %>% mutate_if(is.numeric, round, digits = 3)
+eye.diagnosticity.ms.analysis %>% group_by(Diagnosticity) %>% summarise(ms.m=mean(ms, na.rm=T), ms.sd = sd(ms, na.rm=T)) %>% as.data.frame(.) %>% mutate_if(is.numeric, round, digits = 3)
+eye.diagnosticity.ms.analysis %>% group_by(Diagnosticity, ROI) %>% summarise(ms.m=mean(ms, na.rm=T), ms.sd = sd(ms, na.rm=T)) %>% as.data.frame(.) %>% mutate_if(is.numeric, round, digits = 3)
 #it takes particularly long to look into non-diagnostic mouth/nose but not for non-diagnostic eyes
 
 #SPAI main effect
