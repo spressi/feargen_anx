@@ -5,11 +5,11 @@ requirePackage("lme4")
 requirePackage("lmerTest")
 
 
-#ratings.wide = read_rds("ratings.wide.rds" %>% paste0(path.rds, .)) #or path
-#eyes.wide = read_rds("eyes.wide.rds" %>% paste0(path.rds, .)) #or path
-#pupil.wide = read_rds("pupil.rds" %>% paste0(path.rds, .)) #or path
-#heart.wide = read_rds("heart.wide.rds" %>% paste0(path.rds, .)) #or path
-#eda.wide = read_rds("eda.wide.rds" %>% paste0(path.rds, .)) #or path
+# ratings.wide = read_rds("ratings.wide.rds" %>% paste0(path.rds, .)) #or path
+# eyes.wide = read_rds("eyes.wide.rds" %>% paste0(path.rds, .)) #or path
+# pupil.wide = read_rds("pupil.rds" %>% paste0(path.rds, .)) #or path
+# heart.wide = read_rds("heart.wide.rds" %>% paste0(path.rds, .)) #or path
+# eda.wide = read_rds("eda.wide.rds" %>% paste0(path.rds, .)) #or path
 
 
 data.wide = full_join(questionnaires, ratings.wide, by="subject") %>% 
@@ -204,8 +204,80 @@ print(correl.ms.staiInteraction.plot <- correl.ms.staiInteraction %>%
         scale_shape_manual(values=c(16, 15)) +
         myGgTheme
 )
-#only for low anxiety & stimuli with diagnostic eyes: correlation descriptively negative (as expected for all groups)
 
+#interaction (three-way)
+correl.ms.stai.diag.Interaction = data.wide %>% filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
+  gather("lds.type", "lds", c("Gen_eyes_lds", "Gen_mn_lds")) %>% 
+  gather("ms.diag.type", "ms.diag", c("Gen_eyes_ms", "Gen_mn_ms")) %>%
+  select(subject:STAI, lds.type:ms.diag) %>% 
+  mutate(lds.type = ifelse(grepl("_eyes_", lds.type), "Eyes", "Mouth/Nose") %>% as.factor(),
+         ms.diag.type = ifelse(grepl("_eyes_", ms.diag.type), "Eyes", "Mouth/Nose") %>% as.factor()) %>% 
+  filter(lds.type == ms.diag.type) %>% 
+  mutate(stai.group = ifelse(STAI > median(STAI, na.rm=T), "high", "low") %>% factor(levels=c("low", "high")))
+correl.ms.stai.diag.Interaction %>% filter(stai.group == "high") %>% summarise(rtest = cor.test(lds, ms.diag) %>% correlation_out(returnString=T), 
+                                        .by=c("ms.diag.type"))
+correl.ms.stai.diag.Interaction %>% filter(stai.group == "low") %>% summarise(rtest = cor.test(lds, ms.diag) %>% correlation_out(returnString=T), 
+                                              .by=c("ms.diag.type"))
+print(correl.ms.stai.diag.Interaction.plot <- correl.ms.stai.diag.Interaction %>% 
+        ggplot(aes(x=ms.diag, y=lds, color=ms.diag.type, fill=ms.diag.type, shape=ms.diag.type)) +
+        facet_wrap(vars(stai.group), scales="free_x") +
+        #facet_grid(rows=vars(ms.diag.type), cols=vars(stai.group), scales="free_x") +
+        geom_smooth(method="lm", size=1.5, alpha = .2) +
+        #stat_smooth(method="lm", size=1.5, alpha = .2, fullrange = T) +
+        geom_point(size=4, alpha=.8) + 
+        ylab("Linear Deviation Score") + labs(color="Diagnostic", fill="Diagnostic", shape="Diagnostic") +
+        scale_shape_manual(values=c(16, 15)) +
+        myGgTheme
+)
+
+
+#interaction SPAI x diagnostic region
+correl.ms.spaiInteraction = data.wide %>% filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
+  gather("lds.type", "lds", c("Gen_eyes_lds", "Gen_mn_lds")) %>% 
+  gather("ms.diag.type", "ms.diag", c("Gen_eyes_ms", "Gen_mn_ms")) %>%
+  select(subject:SPAI, lds.type:ms.diag) %>% 
+  mutate(lds.type = ifelse(grepl("_eyes_", lds.type), "Eyes", "Mouth/Nose") %>% as.factor(),
+         ms.diag.type = ifelse(grepl("_eyes_", ms.diag.type), "Eyes", "Mouth/Nose") %>% as.factor()) %>% 
+  filter(lds.type == ms.diag.type) %>% 
+  mutate(spai.group = ifelse(SPAI > median(SPAI, na.rm=T), "high", "low") %>% factor(levels=c("low", "high")))
+correl.ms.spaiInteraction %>% summarise(rtest = cor.test(lds, SPAI) %>% correlation_out(returnString=T), 
+                                        .by=c("ms.diag.type", "spai.group"))
+print(correl.ms.spaiInteraction.plot <- correl.ms.spaiInteraction %>% 
+        ggplot(aes(x=SPAI, y=lds, color=ms.diag.type, fill=ms.diag.type, shape=ms.diag.type)) +
+        facet_wrap(vars(spai.group), scales="free_x") +
+        #facet_grid(rows=vars(ms.diag.type), cols=vars(stai.group), scales="free_x") +
+        geom_smooth(method="lm", size=1.5, alpha = .2) +
+        #stat_smooth(method="lm", size=1.5, alpha = .2, fullrange = T) +
+        geom_point(size=4, alpha=.8) + 
+        ylab("Linear Deviation Score") + labs(color="Diagnostic", fill="Diagnostic", shape="Diagnostic") +
+        scale_shape_manual(values=c(16, 15)) +
+        myGgTheme
+)
+
+#interaction SPAI (three-way)
+correl.ms.spai.diag.Interaction = data.wide %>% filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
+  gather("lds.type", "lds", c("Gen_eyes_lds", "Gen_mn_lds")) %>% 
+  gather("ms.diag.type", "ms.diag", c("Gen_eyes_ms", "Gen_mn_ms")) %>%
+  select(subject:SPAI, lds.type:ms.diag) %>% 
+  mutate(lds.type = ifelse(grepl("_eyes_", lds.type), "Eyes", "Mouth/Nose") %>% as.factor(),
+         ms.diag.type = ifelse(grepl("_eyes_", ms.diag.type), "Eyes", "Mouth/Nose") %>% as.factor()) %>% 
+  filter(lds.type == ms.diag.type) %>% 
+  mutate(spai.group = ifelse(SPAI > median(SPAI, na.rm=T), "high", "low") %>% factor(levels=c("low", "high")))
+correl.ms.spai.diag.Interaction %>% filter(spai.group == "high") %>% summarise(rtest = cor.test(lds, ms.diag) %>% correlation_out(returnString=T), 
+                                                                               .by=c("ms.diag.type"))
+correl.ms.spai.diag.Interaction %>% filter(spai.group == "low") %>% summarise(rtest = cor.test(lds, ms.diag) %>% correlation_out(returnString=T), 
+                                                                              .by=c("ms.diag.type"))
+print(correl.ms.spai.diag.Interaction.plot <- correl.ms.spai.diag.Interaction %>% 
+        ggplot(aes(x=ms.diag, y=lds, color=ms.diag.type, fill=ms.diag.type, shape=ms.diag.type)) +
+        facet_wrap(vars(spai.group), scales="free_x") +
+        #facet_grid(rows=vars(ms.diag.type), cols=vars(stai.group), scales="free_x") +
+        geom_smooth(method="lm", size=1.5, alpha = .2) +
+        #stat_smooth(method="lm", size=1.5, alpha = .2, fullrange = T) +
+        geom_point(size=4, alpha=.8) + 
+        ylab("Linear Deviation Score") + labs(color="Diagnostic", fill="Diagnostic", shape="Diagnostic") +
+        scale_shape_manual(values=c(16, 15)) +
+        myGgTheme
+)
 
 # #Ratings: LDS & Square Root of Time to non-diagnostic ROI ---- CHECK LMM!!
 # 
