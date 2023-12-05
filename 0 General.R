@@ -24,7 +24,7 @@ requirePackage = function(name, load=T) {
   exclusions = c(
      5, #pain rating < 4
     40, #different faces between discrimination training and main experiment
-    60, #test subject for new experimenter (paradigm not performed)
+    #60, #test subject for new experimenter (paradigm not performed, i.e., no data)
     88, #experiment aborted after discrimination task
     91  #pain rating < 4
   ) %>% unique() %>% sort()
@@ -53,7 +53,7 @@ requirePackage = function(name, load=T) {
   sample.rate = 500 #samples/second
   trial.duration = sample.rate * trialEnd / 1000 #seconds
   
-  #startID = "CONDITION" #identifier for trial start messages
+  #startID = "CONDITION" #identifier for trial start messages (was not sent in presentation, only in PsychoPy version)
   expoID = "Stimulus " #identifier for exposition start messages
   stimExt = ".jpg"
   
@@ -93,9 +93,9 @@ path.rpeaks.postfix = "_rpeaks.csv"
     sd(x, na.rm) / sqrt(if(!na.rm) length(x) else sum(!is.na(x)))
   }
   
-  correlation_out = function(coroutput, returnString=F) {
+  correlation_out = function(coroutput, r_ci=T, returnString=F) {
     names = coroutput$data.name %>% strsplit(" and ") %>% unlist()
-    output = paste0("r(", names[1], ", ", names[2], "): ", coroutput %>% apa::cor_apa(print=F))
+    output = paste0("r(", names[1], ", ", names[2], "): ", coroutput %>% apa::cor_apa(r_ci=r_ci, print=F))
     if (returnString) return(output)
     cat(output, "\n")
   }

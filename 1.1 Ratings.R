@@ -352,7 +352,7 @@ ratings.gen %>% group_by(diagnostic, subject) %>% summarise(rating = mean(rating
 
 #STAI main effect (i.e., correlation)
 ratings.subject.gen.lvl = ratings.subject.gen.diagnostic %>% group_by(subject, SPAI, STAI) %>% summarise(rating.se = se(rating.m, na.rm=T), rating.m = mean(rating.m, na.rm=T))
-ratings.subject.gen.lvl %>% with(cor.test(rating.m, STAI, alternative="greater")) %>% correlation_out()
+ratings.subject.gen.lvl %>% with(cor.test(rating.m, SPAI, alternative="greater")) %>% correlation_out()
 ratings.subject.gen.lvl %>% ggplot(aes(x=STAI, y=rating.m, color=STAI, fill=STAI)) +
   geom_errorbar(aes(ymin=rating.m-rating.se*1.96, ymax=rating.m+rating.se*1.96), width=.4) +
   stat_smooth(method="lm", color = "black") +
