@@ -1,6 +1,7 @@
 if(!require(tidyverse)) install.packages("tidyverse"); library(tidyverse)
 #requirePackage("openintro", load=F)
 requirePackage("mediation", load=F)
+#requirePackage("lme4")
 #requirePackage("lm.beta")
 
 data.wide.z <- data.wide %>%
@@ -14,11 +15,13 @@ data.wide.z <- data.wide %>%
 # direct effect x to m (path a)
 path_a <-lm(Gen_all_ms.z~SPAI.z,data.wide.z)
 summary(path_a)
+confint(path_a, level = 0.95)
 #lm.beta(path_a)
 
 # direct effect x to y (path c) and effect m to y (path b)
 path_b_c <-lm(Gen_all_lds.z~Gen_all_ms.z+SPAI.z,data.wide.z)
 summary(path_b_c)
+confint(path_b_c, level = 0.95)
 #lm.beta(path_b_c)
 
 # mediation (which part of the effect x on y runs through mediator, i.e. path a and b)
@@ -37,11 +40,13 @@ summary(results)
 # direct effect x to m (path a)
 path_a <-lm(Gen_all_ms.non.z ~SPAI.z,data.wide.z)
 summary(path_a)
+confint(path_a, level = 0.95)
 #lm.beta(path_a)
 
 # direct effect x to y (path c) and effect m to y (path b)
 path_b_c <-lm(Gen_all_lds.z~Gen_all_ms.non.z+SPAI.z,data.wide.z)
 summary(path_b_c)
+confint(path_b_c, level = 0.95)
 #lm.beta(path_b_c)
 
 # mediation (which part of the effect x on y runs through mediator, i.e. path a and b)
