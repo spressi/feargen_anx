@@ -180,6 +180,7 @@ anova.pupil = pupil.subject %>% dplyr::filter(phase=="Gen") %>%
               #within=.(threat), within_full=.(diagnostic),
               within=.(threat, diagnostic),
               between=.(SPAI), observed=SPAI,
+              #between=.(STAI), observed=STAI,
               detailed=T, type=2)
 anova.pupil %>% apa::anova_apa()
 anova.pupil %>% ez.ci()
@@ -289,6 +290,7 @@ print(pupil.grandAverage.plot <- pupil %>% dplyr::filter(phase=="Gen") %>% #filt
           axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 0, l = 0, "pt"))))
 #pupil.grandAverage.plot %>% ggsave("5.1 Pupil Generalization over trial time.png", ., device="png", path=paste0(path.rds, "../../4 Results/1 no MRI/"), width=1920, height=1080, units="px")
 #cowplot::plot_grid(pupil.grandAverage.plot, pupil.gradient.plot, ncol=1, labels="auto") %>% ggsave("Figure 3. Pupil.png", ., device="png", path=paste0(path.rds, "../../5 Output/1 Paper - Fear Generalization x Attention/"), width=16.26, height=21, units="cm") #Figure 3
+pupil.gradient.plot + pupil.grandAverage.plot + plot_annotation(tag_levels = 'a')
 
 # Reliability -------------------------------------------------------------
 pupil.reliability = pupil.trial.avg %>% dplyr::filter(phase == "Gen") %>% select(subject, threat, diagnostic, mmChange) %>% 
@@ -368,3 +370,5 @@ names(pupil.wide)[-1] = "Pup_" %>% paste0(names(pupil.wide)[-1])
 pupil.wide %>% pull(Pup_Gen_all_lds) %>% t.test(mu = 0, alternative="greater") %>% apa::t_apa(es_ci=T)
 #pupil.wide %>% pull(Pup_Gen_all_lds) %>% mean() %>% signif(3) %>% paste0("M = ", .)
 pupil.wide %>% summarise(M = Pup_Gen_all_lds %>% mean(), SD = Pup_Gen_all_lds %>% sd()) %>% tibble()
+
+
