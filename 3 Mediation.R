@@ -25,7 +25,7 @@ confint(path_b_c, level = 0.95)
 #lm.beta(path_b_c)
 
 # mediation (which part of the effect x on y runs through mediator, i.e. path a and b)
-
+set.seed(3681253)
 results <- mediation::mediate(path_a, path_b_c, 
                               treat = "SPAI.z", mediator = "Gen_all_ms.z", 
                               boot = TRUE)
@@ -50,7 +50,7 @@ confint(path_b_c, level = 0.95)
 #lm.beta(path_b_c)
 
 # mediation (which part of the effect x on y runs through mediator, i.e. path a and b)
-
+set.seed(7894237)
 results <- mediation::mediate(path_a, path_b_c, 
                               treat = "SPAI.z", mediator = "Gen_all_ms.non.z", 
                               boot = TRUE)
