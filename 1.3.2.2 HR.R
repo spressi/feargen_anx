@@ -219,7 +219,7 @@ heart.simple.gen = heart.simple %>% filter(phase == "Gen")
 heart.ga.gen.subj = heart.simple.gen %>% group_by(threat, subject) %>% summarise(HRchange.se = se(HRchange, na.rm=T), HRchange = mean(HRchange, na.rm=T))
 heart.ga.gen = heart.ga.gen.subj %>% summarise(HRchange.se = se(HRchange, na.rm=T), HRchange = mean(HRchange, na.rm=T))
 print(heart.gradient.plot <- heart.ga.gen %>% ggplot(aes(x=threat, y=HRchange, color=threat, group=NA)) + 
-        geom_dotplot(data=heart.ga.gen.subj, mapping=aes(group=threat, fill=threat), binaxis="y", alpha=.25, color="black", stackratio=1, stackdir="centerwhole", dotsize=.5) +
+        #geom_dotplot(data=heart.ga.gen.subj, mapping=aes(group=threat, fill=threat), binaxis="y", alpha=.25, color="black", stackratio=1, stackdir="centerwhole", dotsize=.5) +
         #geom_path(data=heart.ga.gen %>% filter(threat %in% c(1, 6)), aes(group=NA), color = "black", size=1.5) + #generalization line
         geom_errorbar(aes(ymin=HRchange-HRchange.se*1.96, ymax=HRchange+HRchange.se*1.96), size=1.5) +
         geom_line(size=1) + 
@@ -236,6 +236,9 @@ print(heart.gradient.plot <- heart.ga.gen %>% ggplot(aes(x=threat, y=HRchange, c
 heart.ga.gen %>% select(threat, HRchange, HRchange.se) #descriptive values
 
 #cowplot::plot_grid(heart.trialtime.plot, heart.gradient.plot, ncol=1, labels="auto") #Figure 3
+
+#using patchwork-package
+(heart.gradient.plot + heart.trialtime.plot)/heart.trialtime.spai.plot + plot_annotation(tag_levels = 'a')
 
 #mean scores generalization phase by pairs
 # heart.simple.gen %>% group_by(threat, pairs, subject) %>% summarise(HRchange.se = se(HRchange, na.rm=T), HRchange = mean(HRchange, na.rm=T)) %>% 
