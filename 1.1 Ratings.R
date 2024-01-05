@@ -161,6 +161,7 @@ print(ratings.trials.plot <- ratings.ga.trials %>% ggplot(aes(x=trial, y=rating,
         scale_color_manual(values=colors) + scale_fill_manual(values=colors) + 
         guides(colour=guide_legend(reverse=T), shape=guide_legend(reverse=T), fill=guide_legend(reverse=T)) + 
         ylab("Threat Rating (1-5)") + xlab("Trial Count") + labs(color="Threat", shape="Threat", fill="Threat") + myGgTheme)
+#ggsave("plots/Ratings Trials.png", plot=ratings.trials.plot, scale=1, device="png", dpi=300, units="in", width=1920/300, height = 1080/300)
 
 #mean scores generalization phase
 ratings.ga.gen.subj = ratings.gen %>% group_by(threat, threat_num, threat_both, subject) %>% summarise(rating.se=se(rating, na.rm=T), rating=mean(rating, na.rm=T))
@@ -177,8 +178,10 @@ print(ratings.gradient.plot <- ratings.ga.gen %>% ggplot(aes(x=threat_both, y=ra
         scale_x_discrete(labels=levels(ratings.ga.gen$threat)) +
         ylab("Threat Rating (1-5)") + xlab("Threat") + labs(color="Threat", fill="Threat") +
         myGgTheme + theme(legend.position="none"))
+#ggsave("plots/Ratings Gradient.png", plot=ratings.gradient.plot, scale=1, device="png", dpi=300, units="in", width=1920/300, height = 1080/300)
 
-#cowplot::plot_grid(ratings.trials.plot, ratings.gradient.plot, ncol=1, labels="auto") #Figure 2
+#Figure Ratings
+#cowplot::plot_grid(ratings.trials.plot, ratings.gradient.plot, ncol=1, labels="auto") %>% ggsave("figures/Figure Ratings.png", plot=., scale=1, device="png", dpi=300, units="in", width=8.5, height = 8.5 * 2 / sqrt(2))
 
 # #mean scores first generalization phase
 # ratings.ga.gen.subj = ratings.first.gen %>% group_by(threat, threat_num, threat_both, subject) %>% summarise(rating.se=se(rating, na.rm=T), rating=mean(rating, na.rm=T))
