@@ -159,7 +159,7 @@ for (i in 2:6) {
            paired=T) %>% apa::t_apa(es_ci=T) #schoRsch::t_out()
 }
 
-# Generalization x diagnostic
+# Generalization: diagnostic
 pupil.subject %>% dplyr::filter(phase=="Gen") %>% group_by(threat, diagnostic, subject) %>% summarise(mmChange = mean(mmChange, na.rm=T)) %>% 
   summarise(mmChange.se = se(mmChange, na.rm=T), mmChange = mean(mmChange, na.rm=T))
 
@@ -256,7 +256,7 @@ print(pupil.gradient.plot <- pupil.ga.gen %>% ggplot(aes(x=threat, y=mmChange, c
           axis.line.y = element_line(color="black"),
           axis.title = element_text(size=16, color="black"),
           axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 0, l = 0, "pt"))))
-#pupil.gradient.plot %>% ggsave("5.2 Pupil Generalization.png", ., device="png", path=paste0(path.rds, "../../4 Results/1 no MRI/"), width=1920, height=1080, units="px")
+#pupil.gradient.plot %>% ggsave("plots/Pupil Gradient.png", ., device="png", dpi=300, width=1920/300, height=1080/300, units="in")
 
 #pupil grand average for generalization & only between errorbars
 print(pupil.grandAverage.plot <- pupil %>% dplyr::filter(phase=="Gen") %>% #filter(time <= 4) %>%
@@ -288,9 +288,16 @@ print(pupil.grandAverage.plot <- pupil %>% dplyr::filter(phase=="Gen") %>% #filt
           axis.text.y = element_text(size=16, color="black"),
           axis.title = element_text(size=16, color="black"),
           axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 0, l = 0, "pt"))))
-#pupil.grandAverage.plot %>% ggsave("5.1 Pupil Generalization over trial time.png", ., device="png", path=paste0(path.rds, "../../4 Results/1 no MRI/"), width=1920, height=1080, units="px")
+#pupil.grandAverage.plot %>% ggsave("plots/Pupil Time.png", ., device="png", dpi=300, width=1920/300, height=1080/300, units="in")
+
+#TODO diagnostic main effect
+
+
+#Figure Pupil
 #cowplot::plot_grid(pupil.grandAverage.plot, pupil.gradient.plot, ncol=1, labels="auto") %>% ggsave("Figure 3. Pupil.png", ., device="png", path=paste0(path.rds, "../../5 Output/1 Paper - Fear Generalization x Attention/"), width=16.26, height=21, units="cm") #Figure 3
 pupil.gradient.plot + pupil.grandAverage.plot + plot_annotation(tag_levels = 'a')
+#ggsave("figures/Figure Pupil.png", device="png", dpi=300, width=8.5, height = 8.5 / sqrt(2), units="in")
+
 
 # Reliability -------------------------------------------------------------
 pupil.reliability = pupil.trial.avg %>% dplyr::filter(phase == "Gen") %>% select(subject, threat, diagnostic, mmChange) %>% 
