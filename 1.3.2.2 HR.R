@@ -172,30 +172,29 @@ print(heart.trialtime.plot <- heart.ga.gen.time %>% ggplot(aes(x=time, y=HRchang
         geom_point(size=3) + geom_line() + 
         scale_color_manual(values=colors, labels=c("CS-", paste0("GS", 1:4), "CS+")) + scale_shape_discrete(labels=c("CS-", paste0("GS", 1:4), "CS+")) + scale_fill_manual(values=colors, labels=c("CS-", paste0("GS", 1:4), "CS+")) + 
         ylab("Heart Rate Change (bpm)") + xlab("Trial Time (sec)") + labs(color="Threat", shape="Threat", fill="Threat") + myGgTheme)
+#ggsave("plots/Heart Time.png", plot=heart.trialtime.plot, scale=1, device="png", dpi=300, units="in", width=1920/300, height = 1080/300)
 
 # Split in HSA/LSA 
 heart.ga.gen.time.spai = heart %>% filter(phase == "Gen") %>% 
-  mutate(spai.split = case_when(
-    SPAI.z >= 0 ~ "HSA",
-    SPAI.z < 0 ~ "LSA"
-  ))%>%  
+  mutate(spai.split = ifelse(SPAI.z >= 0, "HSA", "LSA")) %>%
   group_by(threat, time, spai.split) %>% 
   summarise(HRchange.se = se(HRchange, na.rm=T), HRchange = mean(HRchange, na.rm=T)) %>% 
   mutate(time = time %>% as.character() %>% as.numeric()) %>% 
   bind_rows(data.frame(threat=unique(heart$threat), time=0, spai.split = "HSA", HRchange=0, HRchange.se=0)) %>%
-  bind_rows(data.frame(threat=unique(heart$threat), time=0, spai.split = "LSA", HRchange=0, HRchange.se=0))#add origin
+  bind_rows(data.frame(threat=unique(heart$threat), time=0, spai.split = "LSA", HRchange=0, HRchange.se=0)) %>% #add origin
+  mutate(spai.split = spai.split %>% factor(levels=c("LSA", "HSA"))) #low anxiety first instead of alphabetical order
 print(heart.trialtime.spai.plot <- heart.ga.gen.time.spai %>% ggplot(aes(x=time, y=HRchange, color=threat, group=threat, shape=threat)) + 
         geom_hline(yintercept = 0, linetype="dashed") +
         geom_ribbon(aes(ymin=HRchange-HRchange.se*1.96, ymax=HRchange+HRchange.se*1.96, fill=threat), color=NA, alpha=.1) +
         #geom_errorbar(aes(ymin=HRchange-HRchange.se*1.96, ymax=HRchange+HRchange.se*1.96)) +
         geom_point(size=3) + geom_line() + 
-        facet_wrap(vars(spai.split)) +
+        facet_wrap(vars(spai.split), labeller = labeller(spai.split = c(LSA = "Low Social Anxiety", HSA = "High Social Anxiety"))) +
         scale_color_manual(values=colors, labels=c("CS-", paste0("GS", 1:4), "CS+")) + scale_shape_discrete(labels=c("CS-", paste0("GS", 1:4), "CS+")) + scale_fill_manual(values=colors, labels=c("CS-", paste0("GS", 1:4), "CS+")) + 
         ylab("Heart Rate Change (bpm)") + xlab("Trial Time (sec)") + labs(color="Threat", shape="Threat", fill="Threat") + myGgTheme)
+#ggsave("plots/Heart Time SPAI.png", plot=heart.trialtime.spai.plot, scale=1, device="png", dpi=300, units="in", width=1920*1.7/300, height = 1080/300)
 
 
-
-#this is an oversimplification now (cp. exploration)
+#this is an oversimplification now (cf. exploration)
 heart.simple = heart %>% #filter(shockPrior==F) %>% 
   group_by(subject, threat, pair, diagnostic, sex, phase, pairs, SPAI, SPAI.z, STAI, STAI.z) %>% #group_by_at(vars(-trial, -time, -shock, -shockPrior, -hrbl, -HRchange)) %>% 
   summarise(HRchange.se = se(HRchange, na.rm=T), HRchange = mean(HRchange, na.rm=T), hrbl = mean(hrbl, na.rm=T))
@@ -220,7 +219,7 @@ heart.ga.gen.subj = heart.simple.gen %>% group_by(threat, subject) %>% summarise
 heart.ga.gen = heart.ga.gen.subj %>% summarise(HRchange.se = se(HRchange, na.rm=T), HRchange = mean(HRchange, na.rm=T))
 print(heart.gradient.plot <- heart.ga.gen %>% ggplot(aes(x=threat, y=HRchange, color=threat, group=NA)) + 
         #geom_dotplot(data=heart.ga.gen.subj, mapping=aes(group=threat, fill=threat), binaxis="y", alpha=.25, color="black", stackratio=1, stackdir="centerwhole", dotsize=.5) +
-        #geom_path(data=heart.ga.gen %>% filter(threat %in% c(1, 6)), aes(group=NA), color = "black", size=1.5) + #generalization line
+        geom_path(data=heart.ga.gen %>% filter(threat %in% c(1, 6)), aes(group=NA), color = "black", size=1.5) + #generalization line
         geom_errorbar(aes(ymin=HRchange-HRchange.se*1.96, ymax=HRchange+HRchange.se*1.96), size=1.5) +
         geom_line(size=1) + 
         geom_point(size=4.5) +
@@ -233,12 +232,17 @@ print(heart.gradient.plot <- heart.ga.gen %>% ggplot(aes(x=threat, y=HRchange, c
           #aspect.ratio = 1,
           legend.position = "none",
           axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 0, l = 0, "pt"))))
+#ggsave("plots/Heart Gradient.png", plot=heart.gradient.plot, scale=1, device="png", dpi=300, units="in", width=1920/300, height = 1080/300)
+
 heart.ga.gen %>% select(threat, HRchange, HRchange.se) #descriptive values
 
-#cowplot::plot_grid(heart.trialtime.plot, heart.gradient.plot, ncol=1, labels="auto") #Figure 3
+#Figure Heart
+#cowplot::plot_grid(heart.trialtime.plot, heart.gradient.plot, ncol=1, labels="auto") %>% ggsave("figures/Figure Heart (old).png", plot=., scale=.7, device="png", dpi=300, units="in", width=8.5, height = 8.5 * 2 / sqrt(2))
 
 #using patchwork-package
+library(patchwork)
 (heart.gradient.plot + heart.trialtime.plot)/heart.trialtime.spai.plot + plot_annotation(tag_levels = 'a')
+#ggsave("figures/Figure Heart.png", scale=1, device="png", dpi=300, units="in", width=8.5, height = 8.5 / sqrt(2))
 
 #mean scores generalization phase by pairs
 # heart.simple.gen %>% group_by(threat, pairs, subject) %>% summarise(HRchange.se = se(HRchange, na.rm=T), HRchange = mean(HRchange, na.rm=T)) %>% 
@@ -298,6 +302,7 @@ print(heart.spai.plot <- heart.simple.gen.lvl %>% ggplot(aes(x=SPAI, y=HRchange.
         geom_point(size=4) + 
         ylab("Heart Rate Change (bpm)") +
         scale_color_viridis_c() + scale_fill_viridis_c() + myGgTheme + theme(legend.position = "none"))
+#ggsave("plots/Heart SPAI.png", plot=heart.spai.plot, scale=1, device="png", dpi=300, units="in", width=1920/300, height = 1080/300)
 
 #SPAI x threat x diagnostic
 heart.simple.spaiXthreatXdiagnostic = heart.simple.gen %>% group_by(subject, SPAI, STAI, threat, diagnostic) %>% summarise(HRchange.se = se(HRchange, na.rm=T), HRchange.m = mean(HRchange, na.rm=T))
