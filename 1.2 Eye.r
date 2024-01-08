@@ -1060,7 +1060,7 @@ eye.diagnosticity.ms.spaiXdia %>%
   scale_color_viridis_c() + myGgTheme + theme(legend.position = "none")
 
 
-#Sqrt of Latency to ROIs -----------------------------------------------------------------------------------------------
+# Hypotheses Latency (sqrt) -----------------------------------------------
 eye.diagnosticity.ms_sqrt.subj = eye.diagnosticity.ms.subj %>% mutate(ms = sqrt(ms))
 
 eye.diagnosticity.ms_sqrt.subj %>% mutate(ms.z = scale(ms)[,1]) %>% arrange(desc(abs(ms.z)))
@@ -1092,7 +1092,7 @@ eye.diagnosticity.ms_sqrt.analysis %>% filter(subject %in% exclusions.eye.ms == 
               detailed=T, type=2) %>% apa::anova_apa(force_sph_corr=T)
 
 eye.diagnosticity.ms_sqrt.subj.analysis = eye.diagnosticity.ms_sqrt.analysis %>% filter(subject %in% exclusions.eye.ms == F) #manual exclusion because of extreme latency
-print(eye.main.ms <- eye.diagnosticity.ms_sqrt.subj.analysis %>% group_by(diagnostic, Diagnosticity, ROI) %>% summarise(ms.se=se(ms, na.rm=T), ms=mean(ms, na.rm=T)) %>% 
+print(eye.main.ms.sqrt <- eye.diagnosticity.ms_sqrt.subj.analysis %>% group_by(diagnostic, Diagnosticity, ROI) %>% summarise(ms.se=se(ms, na.rm=T), ms=mean(ms, na.rm=T)) %>% 
         ggplot(aes(x=diagnostic, y=ms, color=ROI, shape=Diagnosticity)) + 
         #ggplot(aes(x=diagnostic, y=ms, color=as.numeric(ROI)==as.numeric(diagnostic))) + 
         geom_dotplot(data=eye.diagnosticity.ms_sqrt.subj.analysis %>% filter(ROI=="Eyes"), mapping=aes(group=interaction(ROI, diagnostic), fill=ROI), stackdir="down", binaxis="y", alpha=.25, color="black", stackratio=1, dotsize=.75) +
@@ -1139,6 +1139,9 @@ print(eye.ms.spai <- eye.diagnosticity.ms.spaiXdia %>%
   ylab(expression("Average Time to ROIs (" * sqrt(sec) * ")")) +
   scale_color_viridis_c() + myGgTheme + theme(legend.position = "none"))
 #ggsave("plots/Eye Latency SPAI.png", plot=eye.ms.spai, scale=1, device="png", dpi=300, units="in", width=1920/300, height = 1080/300)
+
+#Figure Eye
+#cowplot::plot_grid(eye.main.ms.sqrt, eye.ms.spai, ncol=1, labels="auto") %>% ggsave("figures/Figure Eye.png", plot=., scale=1, device="png", dpi=300, units="in", width=8.5, height = 8.5 * 2 / sqrt(2))
 
 
 #STAI x Diagnosticity
