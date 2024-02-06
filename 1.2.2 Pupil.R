@@ -372,3 +372,4 @@ pupil.wide %>% pull(Pup_Gen_all_lds) %>% t.test(mu = 0, alternative="greater") %
 pupil.wide %>% summarise(M = Pup_Gen_all_lds %>% mean(), SD = Pup_Gen_all_lds %>% sd()) %>% tibble()
 
 
+
