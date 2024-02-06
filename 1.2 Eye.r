@@ -919,7 +919,7 @@ eye.diagnosticity.analysis %>%
               between=.(STAI), observed=STAI,
               detailed=T, type=2) %>% apa::anova_apa(force_sph_corr=T)
 
-#main eye figure from Reutter & Gamer (2022)
+#main eye figure from Reutter & Gamer (2023)
 #eye.diagnosticity.analysis = eye.diagnosticity.subj  %>% filter(subject %in% exclusions.eye.dwell == F) #manual exclusion because of extreme dwell
 print(eye.main <- eye.diagnosticity.analysis %>% group_by(ROI, Diagnosticity, diagnostic) %>% summarise(relDwell.se = se(relDwell, na.rm=T), relDwell = mean(relDwell)) %>% 
         ggplot(aes(x=diagnostic, y=relDwell, color=ROI, shape=Diagnosticity)) + 
@@ -933,6 +933,7 @@ print(eye.main <- eye.diagnosticity.analysis %>% group_by(ROI, Diagnosticity, di
         #scale_color_viridis_d(labels=c("Eyes", "Mouth/Nose")) +
         ylab("Relative Dwell Time (%)") + xlab("Diagnostic Region") +
         ylim(c(0, 100)) + myGgTheme)
+#ggsave("plots/Eye Dwell.png", plot=eye.main, scale=1.1, device="png", dpi=300, units="in", width=1920/300, height = 1080/300)
 
 
 #2-way interaction (n.s.)
@@ -958,7 +959,7 @@ eye.diagnosticity.spaiXdia %>%
   facet_wrap(vars(Diagnosticity)) +
   geom_errorbar(aes(ymin=relDwell-relDwell.se*1.96, ymax=relDwell+relDwell.se*1.96), width=spai.width) +
   geom_smooth(method="lm", color="black") + geom_point(size=4) +
-  ylab("Average Time to ROIs (sec)") +
+  ylab("Average Dwell (%)") +
   scale_color_viridis_c() + myGgTheme + theme(legend.position = "none")
 
 #STAI x Diagnosticity
@@ -973,7 +974,7 @@ eye.diagnosticity.staiXdia %>%
   facet_wrap(vars(Diagnosticity)) +
   geom_errorbar(aes(ymin=relDwell-relDwell.se*1.96, ymax=relDwell+relDwell.se*1.96)) +
   geom_smooth(method="lm", color="black") + geom_point(size=4) +
-  ylab("Average Time to ROIs (sec)") +
+  ylab("Average Dwell (%)") +
   scale_color_viridis_c() + myGgTheme + theme(legend.position = "none")
 
 # Hypotheses Latency ------------------------------------------------------
@@ -1020,6 +1021,8 @@ print(eye.main.ms <- eye.diagnosticity.ms.subj.analysis %>% group_by(diagnostic,
         #scale_color_discrete(name="Diagnosticity of ROI", labels=c("Diagnostic", "Non-Diagnostic")) +
         #scale_color_viridis_d(labels=c("Eyes", "Mouth/Nose")) +
         ylab("Latency to ROI (sec)") + xlab("Diagnostic Region") + myGgTheme)
+#ggsave("plots/Eye Latency.png", plot=eye.main.ms, scale=1, device="png", dpi=300, units="in", width=1920/300, height = 1080/300)
+
 
 #ROI x Diagnosticity
 eye.diagnosticity.ms.analysis %>% group_by(ROI) %>% summarise(ms.m=mean(ms, na.rm=T), ms.sd = sd(ms, na.rm=T))%>% as.data.frame(.) %>% mutate_if(is.numeric, round, digits = 3)
@@ -1057,7 +1060,7 @@ eye.diagnosticity.ms.spaiXdia %>%
   scale_color_viridis_c() + myGgTheme + theme(legend.position = "none")
 
 
-#Sqrt of Latency to ROIs -----------------------------------------------------------------------------------------------
+# Hypotheses Latency (sqrt) -----------------------------------------------
 eye.diagnosticity.ms_sqrt.subj = eye.diagnosticity.ms.subj %>% mutate(ms = sqrt(ms))
 
 eye.diagnosticity.ms_sqrt.subj %>% mutate(ms.z = scale(ms)[,1]) %>% arrange(desc(abs(ms.z)))
@@ -1089,7 +1092,7 @@ eye.diagnosticity.ms_sqrt.analysis %>% filter(subject %in% exclusions.eye.ms == 
               detailed=T, type=2) %>% apa::anova_apa(force_sph_corr=T)
 
 eye.diagnosticity.ms_sqrt.subj.analysis = eye.diagnosticity.ms_sqrt.analysis %>% filter(subject %in% exclusions.eye.ms == F) #manual exclusion because of extreme latency
-print(eye.main.ms <- eye.diagnosticity.ms_sqrt.subj.analysis %>% group_by(diagnostic, Diagnosticity, ROI) %>% summarise(ms.se=se(ms, na.rm=T), ms=mean(ms, na.rm=T)) %>% 
+print(eye.main.ms.sqrt <- eye.diagnosticity.ms_sqrt.subj.analysis %>% group_by(diagnostic, Diagnosticity, ROI) %>% summarise(ms.se=se(ms, na.rm=T), ms=mean(ms, na.rm=T)) %>% 
         ggplot(aes(x=diagnostic, y=ms, color=ROI, shape=Diagnosticity)) + 
         #ggplot(aes(x=diagnostic, y=ms, color=as.numeric(ROI)==as.numeric(diagnostic))) + 
         geom_dotplot(data=eye.diagnosticity.ms_sqrt.subj.analysis %>% filter(ROI=="Eyes"), mapping=aes(group=interaction(ROI, diagnostic), fill=ROI), stackdir="down", binaxis="y", alpha=.25, color="black", stackratio=1, dotsize=.75) +
@@ -1128,13 +1131,18 @@ eye.diagnosticity.ms.spaiXdia = eye.diagnosticity.ms_sqrt.analysis %>%
   left_join(eye.diagnosticity.ms %>% group_by(subject, Diagnosticity) %>% summarise(ms.se=se(ms/1000, na.rm=T)))
 eye.diagnosticity.ms.spaiXdia %>% group_by(Diagnosticity) %>% 
   summarise(r = cor.test(ms, SPAI, alternative="two.sided") %>% apa::cor_apa(r_ci=T, print=F))
-eye.diagnosticity.ms.spaiXdia %>% 
+print(eye.ms.spai <- eye.diagnosticity.ms.spaiXdia %>% 
   ggplot(aes(y=ms, x=SPAI, color=SPAI)) +
   facet_wrap(vars(Diagnosticity)) +
   geom_errorbar(aes(ymin=ms-ms.se*1.96, ymax=ms+ms.se*1.96), width=spai.width) +
   geom_smooth(method="lm", color="black") + geom_point(size=4) +
   ylab(expression("Average Time to ROIs (" * sqrt(sec) * ")")) +
-  scale_color_viridis_c() + myGgTheme + theme(legend.position = "none")
+  scale_color_viridis_c() + myGgTheme + theme(legend.position = "none"))
+#ggsave("plots/Eye Latency SPAI.png", plot=eye.ms.spai, scale=1, device="png", dpi=300, units="in", width=1920/300, height = 1080/300)
+
+#Figure Eye
+#cowplot::plot_grid(eye.main.ms.sqrt, eye.ms.spai, ncol=1, labels="auto") %>% ggsave("figures/Figure Eye.png", plot=., scale=1, device="png", dpi=300, units="in", width=8.5, height = 8.5 * 2 / sqrt(2))
+
 
 #STAI x Diagnosticity
 eye.diagnosticity.ms.staiXdia = eye.diagnosticity.ms_sqrt.analysis %>% 
@@ -1143,13 +1151,14 @@ eye.diagnosticity.ms.staiXdia = eye.diagnosticity.ms_sqrt.analysis %>%
   left_join(eye.diagnosticity.ms %>% group_by(subject, Diagnosticity) %>% summarise(ms.se=se(ms/1000, na.rm=T)))
 eye.diagnosticity.ms.staiXdia %>% group_by(Diagnosticity) %>% 
   summarise(r = cor.test(ms, STAI, alternative="two.sided") %>% apa::cor_apa(r_ci=T, print=F))
-eye.diagnosticity.ms.staiXdia %>% 
+print(eye.ms.stai <- eye.diagnosticity.ms.staiXdia %>% 
   ggplot(aes(y=ms, x=STAI, color=STAI)) +
   facet_wrap(vars(Diagnosticity)) +
   geom_errorbar(aes(ymin=ms-ms.se*1.96, ymax=ms+ms.se*1.96)) +
   geom_smooth(method="lm", color="black") + geom_point(size=4) +
   ylab(expression("Average Time to ROIs (" * sqrt(sec) * ")")) +
-  scale_color_viridis_c() + myGgTheme + theme(legend.position = "none")
+  scale_color_viridis_c() + myGgTheme + theme(legend.position = "none"))
+#ggsave("plots/Eye Latency STAI.png", plot=eye.ms.stai, scale=1, device="png", dpi=300, units="in", width=1920/300, height = 1080/300)
 
 #STAI x ROI
 eye.diagnosticity.ms.staiXroi = eye.diagnosticity.ms_sqrt.analysis %>% 
@@ -1400,6 +1409,7 @@ print(eye.time <- eye.diagnosticity.bins.average.ga %>% filter(bin <= ratingStar
         #scale_shape_discrete(name="Diagnosticity of ROI", labels=c("Non-Diagnostic", "Diagnostic")) + guides(shape = guide_legend(reverse = TRUE)) +
         ylab("Relative Dwell Time (%)") + xlab("Trial Time (sec)") + #labs(shape="Diagnostic") +
         scale_x_continuous(breaks=c(1:4, 4.75), labels=c(1:4, "Avg")) + myGgTheme) #hacked :/
+#ggsave("plots/Eye Dwell Time.png", plot=eye.time, scale=1, device="png", dpi=300, units="in", width=1920/300, height = 1080/300)
 
 #plotly::ggplotly(eye.time)
 

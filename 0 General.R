@@ -9,7 +9,7 @@ requirePackage = function(name, load=T) {
 { #install packages needed
   requirePackage("scales", load=F)
   requirePackage("cowplot", load=F)
-  requirePackage("Patchwork", load=F)
+  requirePackage("Patchwork", load=T)
   requirePackage("readxl", load=F)
   requirePackage("apaTables", load=F)
   requirePackage("schoRsch", load=F)
@@ -260,9 +260,10 @@ paste0("subjects meeting the cut-off: ", {mean(questionnaires$SPAI >= spai.cutof
        "(N = ", sum(questionnaires$SPAI > spai.cutoff), "; ",
        "z = ", with(questionnaires, (spai.cutoff - mean(SPAI)) / sd(SPAI)) %>% round(digits=2), ")")
 
-questionnaires %>%
+print(spai.plot <- questionnaires %>%
   ggplot(aes(x=SPAI)) + geom_histogram(binwidth=.25, boundary=spai.cutoff, color="black", fill="grey") + 
-  geom_vline(xintercept=spai.cutoff, color="red") + myGgTheme + scale_y_continuous(breaks=scales::breaks_pretty())
+  geom_vline(xintercept=spai.cutoff, color="red") + myGgTheme + scale_y_continuous(breaks=scales::breaks_pretty()))
+#ggsave("plots/SPAI.png", plot=spai.plot, scale=1, device="png", dpi=300, units="in", width=1920/300, height = 1080/300)
 
 #questionnaires %>% filter(problem==T)
 #exclusions = exclusions %>% c(questionnaires %>% filter(problem==T) %>% .$subject) #rather don't exclude because if subjects were "lying", assume it was during sreening

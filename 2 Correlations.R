@@ -29,6 +29,9 @@ data.wide = full_join(questionnaires, ratings.wide, by="subject") %>%
 
 
 # Screening Quality -------------------------------------------------------
+questionnaires %>% transmute(recruitment = ifelse(Screening_vorher %>% is.na(), "screening", "other")) %>% 
+  count(recruitment) %>% mutate(prop = n / sum(n))
+
 questionnaires %>% with(cor.test(Screening_vorher, Screening_nachher, alternative="greater")) %>% correlation_out()
 #questionnaires %>% ggplot(aes(x=Screening_vorher, y=Screening_nachher)) + geom_smooth(method="lm", color="black") + geom_point(size=2) + myGgTheme
 
