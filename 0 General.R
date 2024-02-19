@@ -17,6 +17,7 @@ requirePackage = function(name, load=T) {
   requirePackage("ez", load=F)
   requirePackage("TOSTER", load=F)
   requirePackage("psych", load=F)
+  requirePackage("ppcor", load=F)
 }
 
 

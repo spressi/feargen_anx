@@ -205,6 +205,9 @@ reg.lds.ms.sqr.stai %>% lmer.ci()
 
 #STAI main effect
 data.wide %>% with(cor.test(Gen_all_lds, STAI, alternative="less")) %>% correlation_out()  #apa::cor_apa(r_ci=T)
+data.wide %>% with(ppcor::pcor.test(Gen_all_lds, STAI, SPAI, method="pearson")) %>% 
+  rename(r = estimate, p = p.value, t = statistic) %>% 
+  mutate(p_onesided = if_else(r < 0, p/2, 1-p/2)) %>% rename(p_twosided = p) #TODO CI? => do by hand with residuals?
 
 print(correl.ms.stai.plot <- data.wide %>% filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
         gather("lds.type", "lds", c("Gen_eyes_lds", "Gen_mn_lds")) %>% 
