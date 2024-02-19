@@ -249,12 +249,8 @@ print(correl.ms.staiInteraction.plot <- correl.ms.staiInteraction %>%
         scale_shape_manual(values=c(16, 15)) +
         myGgTheme
 )
-<<<<<<< HEAD
-=======
-#Expected negative correlation between latency & LDS stems from
-#diagnostic eyes       for high anxious subjects
-#diagnostic mouth/nose for low  anxious subjects
->>>>>>> bb79409f56b8e1e6da3683c3baba7b4917ecf8ef
+
+#Expected negative correlation between latency & LDS stems from diagnostic eyes for high anxious subjects
 
 #interaction (three-way)
 correl.ms.stai.diag.Interaction = data.wide %>% filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
