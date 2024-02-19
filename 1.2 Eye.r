@@ -757,8 +757,9 @@ eye = eye %>% filter(subject %in% vpn.eye) %>% merge(questionnaires, by="subject
 
 #Accuracy
 eye.accuracy = tibble()
-for (file in list.files(paste0(path.eye, "messages/"), pattern="*.asc")) {
-  calibration.temp = read_delim(paste0(path.eye, "messages/", file), delim=" ", col_names=F, skip=11) %>% mutate(index = 1:n())
+for (file in list.files(paste0(path.eye, "../"), pattern="*.edf")) {
+  #TODO read one file
+  #calibration.temp = read_delim(paste0(path.eye, "messages/", file), delim=" ", col_names=F, skip=11) %>% mutate(index = 1:n())
   eye.accuracy = calibration.temp %>% filter(X3 == "VALIDATION", X7 %>% is.na() == F) %>% 
     mutate(lag = lead(index) - index, lag = ifelse(is.na(lag), index, lag)) %>% #find the last instances before a big lag (and also take very last instance)
     arrange(lag) %>% tail(2) %>% arrange(index) %>% 
