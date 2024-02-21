@@ -757,19 +757,35 @@ eye = eye %>% filter(subject %in% vpn.eye) %>% merge(questionnaires, by="subject
 
 #Accuracy
 eye.accuracy = tibble()
-for (file in list.files(paste0(path.eye, "../"), pattern="*.edf")) {
-  #TODO read one file
+for (file in list.files(paste0(path.eye, "../"), pattern="*.edf", full.names = T)) {
+  #file = list.files(paste0(path.eye, "../"), pattern="*.edf", full.names = T) #%>% sample(1)
+  calibration.temp <- file %>% read_edf(import_samples=F) 
   #calibration.temp = read_delim(paste0(path.eye, "messages/", file), delim=" ", col_names=F, skip=11) %>% mutate(index = 1:n())
-  eye.accuracy = calibration.temp %>% filter(X3 == "VALIDATION", X7 %>% is.na() == F) %>% 
+  eye.accuracy = calibration.temp$events %>% tibble() %>% 
+    mutate(index = 1:n()) %>% 
+    select(index, message) %>% 
+    filter(message %>% grepl("VALIDATION", .)) %>% 
+    filter(!grepl("ABORTED", message)) %>% 
     mutate(lag = lead(index) - index, lag = ifelse(is.na(lag), index, lag)) %>% #find the last instances before a big lag (and also take very last instance)
-    arrange(lag) %>% tail(2) %>% arrange(index) %>% 
-    mutate(X7 = X7 %>% trimws()) %>% 
-    separate(X7, into=paste0("val", 1:11), sep="\\s+") %>% 
-    mutate(subject = file, block = 1:n()) %>% 
+    arrange(lag) %>% 
+    filter(index < 1000) %>%
+    tail(1) %>% arrange(index) %>% 
+    mutate(message = message %>% trimws()) %>% 
+    separate(message, into= c(NA, NA, NA, NA, NA, NA, NA,"average", NA, "max", NA, NA, NA, NA, NA, NA), sep = "[\\s]+") %>% 
+    mutate(subject = gsub("C:/Users/jat41gk/Documents/Projekte/Visual Exploration Social Anxiety/Data/EyeLink/Output/../", "", file)) %>% 
     #pivot_wider(id_cols = subject, names_prefix = "validation", names_from = block, values_from = val3) %>% #wide format
-    mutate(validation = val3 %>% as.double()) %>% select(subject, block, validation) %>% #long format
+    mutate(validation = average %>% as.double()) %>% select(subject, validation) %>% #long format
     bind_rows(eye.accuracy, .)
 }
+eye.accuracy <- eye.accuracy %>% mutate(block = case_when(grepl("_1", eye.accuracy$subject) ~ 1,
+                                         grepl("_2", eye.accuracy$subject) ~ 2,
+                                         grepl("_3", eye.accuracy$subject) ~ 3))
+# eye.accuracy <- eye.accuracy %>% 
+#   mutate(subject = gsub("_1.edf","", eye.accuracy$subject)) %>%
+#   mutate(subject = gsub("_2.edf","", eye.accuracy$subject)) %>%
+#   mutate(subject = gsub("_3.edf","", eye.accuracy$subject))
+# eye.accuracy <- eye.accuracy %>%
+#   filter(!subject %in% paste0("vp", ifelse(as.numeric(eye.invalid.bl)<10, 0, ""), eye.invalid.bl))
 eye.accuracy %>% summarise(inaccuracy.m = mean(validation), inaccuracy.sd = sd(validation))
 
 #Data Loss
