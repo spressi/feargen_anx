@@ -760,7 +760,6 @@ eye.accuracy = tibble()
 for (file in list.files(paste0(path.eye, "../"), pattern="*.edf", full.names = T)) {
   #file = list.files(paste0(path.eye, "../"), pattern="*.edf", full.names = T) #%>% sample(1)
   calibration.temp <- file %>% read_edf(import_samples=F) 
-  #calibration.temp = read_delim(paste0(path.eye, "messages/", file), delim=" ", col_names=F, skip=11) %>% mutate(index = 1:n())
   eye.accuracy = calibration.temp$events %>% tibble() %>% 
     mutate(index = 1:n()) %>% 
     select(index, message) %>% 
@@ -772,7 +771,8 @@ for (file in list.files(paste0(path.eye, "../"), pattern="*.edf", full.names = T
     tail(1) %>% arrange(index) %>% 
     mutate(message = message %>% trimws()) %>% 
     separate(message, into= c(NA, NA, NA, NA, NA, NA, NA,"average", NA, "max", NA, NA, NA, NA, NA, NA), sep = "[\\s]+") %>% 
-    mutate(subject = gsub("C:/Users/jat41gk/Documents/Projekte/Visual Exploration Social Anxiety/Data/EyeLink/Output/../", "", file)) %>% 
+    #mutate(subject = gsub("C:/Users/jat41gk/Documents/Projekte/Visual Exploration Social Anxiety/Data/EyeLink/Output/../", "", file)) %>% 
+    mutate(subject = file %>% pathToCode()) %>% 
     #pivot_wider(id_cols = subject, names_prefix = "validation", names_from = block, values_from = val3) %>% #wide format
     mutate(validation = average %>% as.double()) %>% select(subject, validation) %>% #long format
     bind_rows(eye.accuracy, .)
