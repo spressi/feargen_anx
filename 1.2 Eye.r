@@ -759,7 +759,7 @@ eye = eye %>% filter(subject %in% vpn.eye) %>% merge(questionnaires, by="subject
 eye.accuracy = tibble()
 for (file in list.files(paste0(path.eye, "../"), pattern="*.edf", full.names = T)) {
   #file = list.files(paste0(path.eye, "../"), pattern="*.edf", full.names = T) #%>% sample(1)
-  calibration.temp <- file %>% read_edf(import_samples=F) 
+  calibration.temp <- file %>% eyelinkReader::read_edf(import_samples=F) 
   eye.accuracy = calibration.temp$events %>% tibble() %>% 
     mutate(index = 1:n()) %>% 
     select(index, message) %>% 
