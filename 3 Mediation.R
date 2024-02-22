@@ -102,3 +102,4 @@ set.seed(5677612)
 results <- mediation::mediate(path_a, path_b_c, 
                               treat = "STAI.z", mediator = "Gen_all_ms.non.z", 
                               boot = TRUE)
+summary(results)
