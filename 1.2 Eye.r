@@ -980,7 +980,7 @@ eye.diagnosticity %>% filter(subject %in% exclusions.eye.dwell == F) %>% #manual
 #SPAI x Diagnosticity
 eye.diagnosticity.spaiXdia = eye.diagnosticity.analysis %>% 
   filter(subject %in% exclusions.eye.dwell == F) %>% #manual exclusion because of extreme latency
-  group_by(subject, SPAI, Diagnosticity) %>% summarise(relDwell = mean(relDwell, na.rm=T)) %>% 
+  group_by(subject, SPAI, STAI, Diagnosticity) %>% summarise(relDwell = mean(relDwell, na.rm=T)) %>% 
   left_join(eye.diagnosticity %>% group_by(subject, Diagnosticity) %>% summarise(relDwell.se=se(relDwell*100, na.rm=T)))
 eye.diagnosticity.spaiXdia %>% group_by(Diagnosticity) %>% 
   summarise(r = cor.test(relDwell, SPAI, alternative="two.sided") %>% apa::cor_apa(r_ci=T, print=F))
@@ -1006,6 +1006,13 @@ eye.diagnosticity.staiXdia %>%
   geom_smooth(method="lm", color="black") + geom_point(size=4) +
   ylab("Average Dwell (%)") +
   scale_color_viridis_c() + myGgTheme + theme(legend.position = "none")
+
+#SPAI vs. STAI
+eye.diagnosticity.spaiXdia %>% group_by(Diagnosticity) %>% 
+  summarise(r_SPAI.STAI = ppcor::pcor.test(relDwell, SPAI, STAI, method="pearson") %>% 
+              rename(r = estimate, p = p.value, t = statistic) %>% select(r, p, t), #TODO CI? => do by hand with residuals?)
+            r_STAI.SPAI = ppcor::pcor.test(relDwell, STAI, SPAI, method="pearson") %>% 
+              rename(r = estimate, p = p.value, t = statistic) %>% select(r, p, t)) #TODO CI? => do by hand with residuals?)
 
 # Hypotheses Latency ------------------------------------------------------
 eye.diagnosticity.ms.subj = eye.diagnosticity.ms %>% group_by(subject, SPAI, STAI, ROI, Diagnosticity, diagnostic) %>% 
