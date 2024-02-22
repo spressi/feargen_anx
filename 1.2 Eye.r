@@ -1084,7 +1084,7 @@ eye.diagnosticity.ms.spai %>%
 #SPAI x Diagnosticity
 eye.diagnosticity.ms.spaiXdia = eye.diagnosticity.ms.analysis %>% 
   filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
-  group_by(subject, SPAI, Diagnosticity) %>% summarise(ms = mean(ms, na.rm=T)) %>% 
+  group_by(subject, SPAI, STAI, Diagnosticity) %>% summarise(ms = mean(ms, na.rm=T)) %>% 
   left_join(eye.diagnosticity.ms %>% group_by(subject, Diagnosticity) %>% summarise(ms.se=se(ms/1000, na.rm=T)))
 eye.diagnosticity.ms.spaiXdia %>% group_by(Diagnosticity) %>% 
   summarise(rtest = cor.test(ms, SPAI, alternative="two.sided") %>% apa::cor_apa(r_ci=T, print=F))
@@ -1096,6 +1096,27 @@ eye.diagnosticity.ms.spaiXdia %>%
   ylab("Average Time to ROIs (sec)") +
   scale_color_viridis_c() + myGgTheme + theme(legend.position = "none")
 
+#STAI x Diagnosticity
+eye.diagnosticity.ms.staiXdia = eye.diagnosticity.ms.analysis %>% 
+  filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
+  group_by(subject, STAI, Diagnosticity) %>% summarise(ms = mean(ms, na.rm=T)) %>% 
+  left_join(eye.diagnosticity.ms %>% group_by(subject, Diagnosticity) %>% summarise(ms.se=se(ms/1000, na.rm=T)))
+eye.diagnosticity.ms.staiXdia %>% group_by(Diagnosticity) %>% 
+  summarise(r = cor.test(ms, STAI, alternative="two.sided") %>% apa::cor_apa(r_ci=T, print=F))
+eye.diagnosticity.staiXdia %>% 
+  ggplot(aes(y=relDwell, x=STAI, color=STAI)) +
+  facet_wrap(vars(Diagnosticity)) +
+  geom_errorbar(aes(ymin=relDwell-relDwell.se*1.96, ymax=relDwell+relDwell.se*1.96)) +
+  geom_smooth(method="lm", color="black") + geom_point(size=4) +
+  ylab("Average Dwell (%)") +
+  scale_color_viridis_c() + myGgTheme + theme(legend.position = "none")
+
+#SPAI vs. STAI
+eye.diagnosticity.ms.spaiXdia %>% group_by(Diagnosticity) %>% 
+  summarise(r_SPAI.STAI = ppcor::pcor.test(ms, SPAI, STAI, method="pearson") %>% 
+              rename(r = estimate, p = p.value, t = statistic) %>% select(r, p, t), #TODO CI? => do by hand with residuals?)
+            r_STAI.SPAI = ppcor::pcor.test(ms, STAI, SPAI, method="pearson") %>% 
+              rename(r = estimate, p = p.value, t = statistic) %>% select(r, p, t)) #TODO CI? => do by hand with residuals?)
 
 # Hypotheses Latency (sqrt) -----------------------------------------------
 eye.diagnosticity.ms_sqrt.subj = eye.diagnosticity.ms.subj %>% mutate(ms = sqrt(ms))
