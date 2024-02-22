@@ -9,7 +9,7 @@ requirePackage = function(name, load=T) {
 { #install packages needed
   requirePackage("scales", load=F)
   requirePackage("cowplot", load=F)
-  requirePackage("Patchwork", load=T)
+  requirePackage("patchwork", load=T)
   requirePackage("readxl", load=F)
   requirePackage("apaTables", load=F)
   requirePackage("schoRsch", load=F)
