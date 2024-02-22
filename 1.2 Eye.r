@@ -754,6 +754,19 @@ eye = eye %>% filter(subject %in% vpn.eye) %>% merge(questionnaires, by="subject
 #eye %>% write_rds("eye.rds" %>% paste0(path.rds, .))
 
 # Data Quality ---------------------------------------------------------------
+eye.accuracy.check = tibble()
+for (file in list.files(paste0(path.eye, "../"), pattern="*.edf", full.names = T)) {
+  calibration.temp <- file %>% eyelinkReader::read_edf(import_samples=F)
+  calibration.temp$events %>% tibble() %>% 
+    mutate(index = 1:n()) %>% 
+    select(index, message) %>% 
+    filter(message %>% grepl("VALIDATION", .)) %>% 
+    filter(!grepl("ABORTED", message)) %>% 
+    summarise(subject = file %>% pathToCode(),
+              validations = n()) %>% 
+    bind_rows(eye.accuracy.check, .)
+}
+eye.accuracy.check %>% filter(n > 1)
 
 #Accuracy
 eye.accuracy = tibble()
