@@ -371,7 +371,7 @@ pupil.wide = full_join(pupil.gradients.simple, pupil.gradients.diagnostic, by="s
   mutate(subject = subject %>% codeToNum()) %>% tibble()
 names(pupil.wide)[-1] = "Pup_" %>% paste0(names(pupil.wide)[-1])
 
-#pupil.wide %>% write_rds("pupil.rds" %>% paste0(path.rds, .))
+#pupil.wide %>% write_rds("pupil.wide.rds" %>% paste0(path.rds, .))
 
 # Significance of gradients -----------------------------------------------
 pupil.wide %>% pull(Pup_Gen_all_lds) %>% t.test(mu = 0, alternative="greater") %>% apa::t_apa(es_ci=T)
