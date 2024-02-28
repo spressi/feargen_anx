@@ -190,9 +190,12 @@ require(ggplot2)
 plotdat <- data.frame(subj=rep(1:nrow(ga),each=ncol(ga)),
                       sec=seq(st/1000,en/1000-1/newhz,1/newhz),
                       y=as.numeric(t(ga)))
+plotdat <- plotdat %>%
+  mutate(cov = case_when(subj < 48 ~ "pre",
+                         subj > 48 ~ "post"))
 
 ggplot(plotdat, aes(y=y, x=sec, group=subj)) +
-  geom_line(aes(color=subj)) +
+  geom_line(aes(color=cov), alpha = 0.5) +
   labs(x = "Time (s)") +
   labs(y = "Pupil change (mm)")
 
