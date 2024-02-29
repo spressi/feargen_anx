@@ -113,7 +113,7 @@ data.wide %>% with(cor.test(Gen_eyes_ms, SPAI, alternative="two.sided")) %>% cor
 data.wide %>% with(cor.test(Gen_mn_ms, SPAI, alternative="two.sided")) %>% correlation_out()
 data.wide %>% with(cor.test(Gen_eyes_ms.non, SPAI, alternative="two.sided")) %>% correlation_out()
 data.wide %>% with(cor.test(Gen_mn_ms.non, SPAI, alternative="two.sided")) %>% correlation_out()
-
+#data.wide %>% with(cor.test(Gen_all_ms, SPAI, alternative="two.sided")) %>% correlation_out()
 
 # Ratings -----------------------------------------------------------------
 #data.wide = read_rds("data.wide.rds" %>% paste0(path.rds, .))
