@@ -7,7 +7,7 @@ requirePackage("lmerTest")
 
 # ratings.wide = read_rds("ratings.wide.rds" %>% paste0(path.rds, .)) #or path
 # eyes.wide = read_rds("eyes.wide.rds" %>% paste0(path.rds, .)) #or path
-# pupil.wide = read_rds("pupil.rds" %>% paste0(path.rds, .)) #or path
+# pupil.wide = read_rds("pupil.wide.rds" %>% paste0(path.rds, .)) #or path
 # heart.wide = read_rds("heart.wide.rds" %>% paste0(path.rds, .)) #or path
 # eda.wide = read_rds("eda.wide.rds" %>% paste0(path.rds, .)) #or path
 

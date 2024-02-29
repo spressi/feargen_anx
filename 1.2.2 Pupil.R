@@ -13,21 +13,31 @@ pupil.avg = list() #vector("list", length(files.pupil))
 pupil.trial = list()
 for (filename in files.pupil) {
   #filename = files.pupil %>% sample(1)
-  df = read.csv2(filename) %>% group_by(trial) %>% nest() %>%
-    merge(readRDS("ratings.rds" %>% paste0(path.rds, .)) %>% dplyr::filter(subject==filename %>% pupilToNum()) %>% select(trial, shock, threat, pair, diagnostic, sex, phase, threat_num, threat_both), by.x = "trial") %>% 
-    mutate(data = data %>% map(function(x) {
-      signal = x %>% as.numeric()
-      signal = signal - mean(signal[1:sample.rate.pupil]) #1 sec baseline correction
-      data.frame(mmChange = signal, 
-                 change.z = scale(signal, center=F), #trial-level standardization (cf. Greenberg et al. 2013)
-                 time = 0:(length(signal)-1)/sample.rate.pupil - 1)
-    }))
+  #df = read.csv2(filename) %>% pivot_longer(-trial) %>% mutate(sample = name %>% grep("\\d+$", .)) %>% select(-name) %>% nest(.by=trial) %>% #this would be better but would need time to implement :D
+  df = read.csv2(filename) %>% group_by(trial) %>% nest() %>% #careful! everything grouped by trial now!
+    mutate(pupil.baseline = data %>% map_dbl(function(x) x %>% select(1:sample.rate.pupil) %>% as.numeric() %>% mean()),
+           #pupil.baseline = data %>% map_dbl(function(x) x %>% filter(sample <= sample.rate.pupil) %>% pull(value) %>% mean()), #1 sec baseline correction
+           data = data %>% map(function(x) {
+             signal = x %>% as.numeric()
+             #bl = x %>% filter(sample <= sample.rate.pupil) %>% pull(value) %>% mean() #1 sec baseline correction
+             bl = mean(signal[1:sample.rate.pupil]) #1 sec baseline correction
+             #print(bl)
+             tibble(mmChange = signal - bl,
+                    #baseline = bl,
+                    change.z = scale(signal, center=F), #trial-level standardization (cf. Greenberg et al. 2013)
+                    time = 0:(length(signal)-1)/sample.rate.pupil - 1)
+           })) %>% ungroup() %>% 
+    #add trial information from ratings
+    left_join(readRDS("ratings.rds" %>% paste0(path.rds, .)) %>% dplyr::filter(subject==filename %>% pupilToNum()) %>% 
+                select(trial, shock, threat, pair, diagnostic, sex, phase, threat_num, threat_both), by = "trial")
+  
   
   #subject.avg = df %>% group_by(phase, threat) %>%
   subject.avg = df %>% group_by(phase, threat, diagnostic, sex) %>% 
     summarise(signal = data %>% bind_rows() %>% group_by(time) %>% summarise(
       mmChange.se = se(mmChange, na.rm=T), mmChange = mean(mmChange, na.rm=T),
-      change.z.se = se(change.z, na.rm=T), change.z = mean(change.z, na.rm=T)))
+      change.z.se = se(change.z, na.rm=T), change.z = mean(change.z, na.rm=T)),
+      baseline.se = se(pupil.baseline, na.rm=T), baseline = mean(pupil.baseline, na.rm=T))
   
   #pupil.avg[[filename %>% pathToCode()]] = subject.avg
   pupil.avg[[paste0("vp",ifelse(filename %>% pupilToNum()<10,"0",""),as.character(filename %>% pupilToNum()))]] = subject.avg
@@ -38,7 +48,7 @@ for (filename in files.pupil) {
 
 # Exploration -------------------------------------------------------------------
 pupil = pupil.avg %>% bind_rows(.id="subject") %>% mutate(time = signal$time, mmChange = signal$mmChange, change.z = signal$change.z) %>% select(-signal) %>% 
-  group_by(phase, threat, time, subject) %>% summarise(mmChange = mean(mmChange, na.rm=T), change.z = mean(change.z, na.rm=T)) #collapse across unwanted grouping variables
+  group_by(subject, phase, threat, time) %>% summarise(mmChange = mean(mmChange, na.rm=T), change.z = mean(change.z, na.rm=T), baseline = mean(baseline, na.rm=T)) #collapse across unwanted grouping variables
 #all(pupil == read_rds("pupil.rds" %>% paste0(path.rds, .)), na.rm=T) #check equivalence of processing
 #pupil %>% write_rds("pupil.rds" %>% paste0(path.rds, .))
 
@@ -53,6 +63,15 @@ pupil.diff = pupil %>% pivot_wider(names_from = threat, values_from = mmChange, 
   pivot_longer(cols = starts_with("diff."), names_to = "threat", values_to = "diff") %>% 
   na.omit() %>% mutate(threat = threat %>% gsub("diff.", "", .)) %>% 
   merge(pupil, ., by=c("subject", "phase", "time", "threat"), all.x=T)
+
+pupil.baselines = pupil %>% group_by(subject) %>% summarise(baseline = mean(baseline, na.rm=T)) %>% 
+  mutate(subj = subject %>% grep("\\d+$", .),
+         cov = case_when(subj < 48 ~ "pre",
+                         subj > 48 ~ "post"))
+pupil.baselines %>% summarise(baseline.mm = mean(baseline, na.rm=T), baseline.sd = sd(baseline, na.rm=T), baseline.se = se(baseline, na.rm=T),
+                              .by=cov)
+pupil.baselines %>% with(t.test(baseline ~ cov, var.equal = T)) %>% apa::t_apa(es_ci=T)
+  
 
 pupil.diff$phase <- factor(pupil.diff$phase, levels = c("Hab", "Acq", "Gen"))
 pupil.diff %>% #filter(time <= 4) %>%
@@ -371,7 +390,7 @@ pupil.wide = full_join(pupil.gradients.simple, pupil.gradients.diagnostic, by="s
   mutate(subject = subject %>% codeToNum()) %>% tibble()
 names(pupil.wide)[-1] = "Pup_" %>% paste0(names(pupil.wide)[-1])
 
-#pupil.wide %>% write_rds("pupil.rds" %>% paste0(path.rds, .))
+#pupil.wide %>% write_rds("pupil.wide.rds" %>% paste0(path.rds, .))
 
 # Significance of gradients -----------------------------------------------
 pupil.wide %>% pull(Pup_Gen_all_lds) %>% t.test(mu = 0, alternative="greater") %>% apa::t_apa(es_ci=T)
