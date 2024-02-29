@@ -65,7 +65,7 @@ pupil.diff = pupil %>% pivot_wider(names_from = threat, values_from = mmChange, 
   merge(pupil, ., by=c("subject", "phase", "time", "threat"), all.x=T)
 
 pupil.baselines = pupil %>% group_by(subject) %>% summarise(baseline = mean(baseline, na.rm=T)) %>% 
-  mutate(subj = subject %>% grep("\\d+$", .),
+  mutate(subj = subject %>% str_extract("\\d+$"),
          cov = case_when(subj < 48 ~ "pre",
                          subj > 48 ~ "post"))
 pupil.baselines %>% summarise(baseline.mm = mean(baseline, na.rm=T), baseline.sd = sd(baseline, na.rm=T), baseline.se = se(baseline, na.rm=T),
