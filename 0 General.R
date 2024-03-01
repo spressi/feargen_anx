@@ -248,7 +248,7 @@ files.phys = list.files(path.phys, pattern=".*.txt") #load physiology
 questionnaires = suppressMessages( #avoid name repair message (affected columns will be deselected anyway)
   readxl::read_excel("Daten_Fragebögen.xlsx" %>% paste0(path, "Data/", .),
                      sheet = "Daten_FB_gesamt", skip=2, col_names=T)) %>% select(1:5) %>% rename(subject = `VP-Nr`) %>% 
-  mutate(subject = subject %>% gsub("vp", "", ., fixed=T) %>% as.integer(),
+  mutate(subject = subject %>% gsub("vp", "", ., fixed=T) %>% as.integer(), #warning is due to subject "vp00 (Test)" - will be deleted anyway
          SPAI = SPAI / 22, #German SPAI version: mean item scores, not sum scores (for comparison with cut-off values)
          discr = Screening_nachher - Screening_vorher,
          problem = abs(discr) > 1.5, problem = ifelse(problem %>% is.na(), F, problem)) %>% 
