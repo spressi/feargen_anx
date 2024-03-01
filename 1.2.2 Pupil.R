@@ -249,7 +249,8 @@ pupil.ga.gen = pupil.ga.gen.subj %>% group_by(threat) %>%
   summarise(mmChange.se = se(mmChange, na.rm=T), mmChange = mean(mmChange, na.rm=T))
 print(pupil.gradient.plot <- pupil.ga.gen %>% ggplot(aes(x=threat, y=mmChange, color=threat, group=NA)) + 
         #geom_dotplot(data=pupil.ga.gen.subj, mapping=aes(group=threat, fill=threat), binaxis="y", alpha=.25, color="black", stackratio=1, stackdir="centerwhole", dotsize=.5) +
-        geom_point() + geom_path(data=pupil.ga.gen %>% dplyr::filter(threat %in% c("CS-", "CS+")), color = "black", size=1.5) + #generalization line (geom_point first for order of x-axis)
+        geom_point() + 
+        #geom_path(data=pupil.ga.gen %>% dplyr::filter(threat %in% c("CS-", "CS+")), color = "black", size=1.5) + #generalization line (geom_point first for order of x-axis)
         geom_line(size=1) + geom_point(size=4.5) + 
         #geom_errorbar(aes(ymin=mmChange-mmChange.se*1.96, ymax=mmChange+mmChange.se*1.96), size=1.5) +
         geom_errorbar(aes(ymin=mmChange-mmChange.se, ymax=mmChange+mmChange.se), size=1.5) +
@@ -275,7 +276,7 @@ print(pupil.gradient.plot <- pupil.ga.gen %>% ggplot(aes(x=threat, y=mmChange, c
           axis.line.y = element_line(color="black"),
           axis.title = element_text(size=16, color="black"),
           axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 0, l = 0, "pt"))))
-#pupil.gradient.plot %>% ggsave("plots/Pupil Gradient.png", ., device="png", dpi=300, width=1920/300, height=1080/300, units="in")
+#ggsave("plots/Pupil Gradient.png", plot=pupil.gradient.plot, device="png", dpi=300, width=1920/300, height=1080/300, units="in")
 
 #pupil grand average for generalization & only between errorbars
 print(pupil.grandAverage.plot <- pupil %>% dplyr::filter(phase=="Gen") %>% #filter(time <= 4) %>%
@@ -315,7 +316,7 @@ print(pupil.grandAverage.plot <- pupil %>% dplyr::filter(phase=="Gen") %>% #filt
 #Figure Pupil
 #cowplot::plot_grid(pupil.grandAverage.plot, pupil.gradient.plot, ncol=1, labels="auto") %>% ggsave("Figure 3. Pupil.png", ., device="png", path=paste0(path.rds, "../../5 Output/1 Paper - Fear Generalization x Attention/"), width=16.26, height=21, units="cm") #Figure 3
 pupil.gradient.plot + pupil.grandAverage.plot + plot_annotation(tag_levels = 'a')
-#ggsave("figures/Figure Pupil.png", device="png", dpi=300, width=8.5, height = 8.5 / sqrt(2), units="in")
+#ggsave("figures/Figure Pupil.png", device="png", dpi=300, width=6.5, height = 6.5 / sqrt(2), units="in")
 
 
 # Reliability -------------------------------------------------------------

@@ -1199,7 +1199,7 @@ print(eye.ms.spai <- eye.diagnosticity.ms.spaiXdia %>%
 #ggsave("plots/Eye Latency SPAI.png", plot=eye.ms.spai, scale=1, device="png", dpi=300, units="in", width=1920/300, height = 1080/300)
 
 #Figure Eye
-#cowplot::plot_grid(eye.main.ms.sqrt, eye.ms.spai, ncol=1, labels="auto") %>% ggsave("figures/Figure Eye.png", plot=., scale=1, device="png", dpi=300, units="in", width=8.5, height = 8.5 * 2 / sqrt(2))
+#cowplot::plot_grid(eye.main.ms.sqrt, eye.ms.spai, ncol=1, labels="auto") %>% ggsave("figures/Figure Eye.png", plot=., scale=1, device="png", dpi=300, units="in", width=6.5, height = 6.5 * 2 / sqrt(2))
 
 
 #STAI x Diagnosticity

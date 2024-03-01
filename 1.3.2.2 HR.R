@@ -237,12 +237,11 @@ print(heart.gradient.plot <- heart.ga.gen %>% ggplot(aes(x=threat, y=HRchange, c
 heart.ga.gen %>% select(threat, HRchange, HRchange.se) #descriptive values
 
 #Figure Heart
-#cowplot::plot_grid(heart.trialtime.plot, heart.gradient.plot, ncol=1, labels="auto") %>% ggsave("figures/Figure Heart (old).png", plot=., scale=.7, device="png", dpi=300, units="in", width=8.5, height = 8.5 * 2 / sqrt(2))
+#cowplot::plot_grid(heart.trialtime.plot, heart.gradient.plot, ncol=1, labels="auto") %>% ggsave("figures/Figure Heart (old).png", plot=., scale=.7, device="png", dpi=300, units="in", width=6.5, height = 6.5 * 2 / sqrt(2))
 
 #using patchwork-package
-library(patchwork)
 (heart.gradient.plot + heart.trialtime.plot)/heart.trialtime.spai.plot + plot_annotation(tag_levels = 'a')
-#ggsave("figures/Figure Heart.png", scale=1, device="png", dpi=300, units="in", width=8.5, height = 8.5 / sqrt(2))
+#ggsave("figures/Figure Heart.png", scale=1, device="png", dpi=300, units="in", width=6.5, height = 6.5 / sqrt(2))
 
 #mean scores generalization phase by pairs
 # heart.simple.gen %>% group_by(threat, pairs, subject) %>% summarise(HRchange.se = se(HRchange, na.rm=T), HRchange = mean(HRchange, na.rm=T)) %>% 
