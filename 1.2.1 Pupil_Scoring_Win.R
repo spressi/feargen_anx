@@ -35,8 +35,8 @@ st <- -1000; en <- 6000  # Prestimulus-Baseline start and end
 
 # get VPn
 vpn.eye = fixations$subject %>% unique() %>% setdiff(exclusions.eye.num) %>% sort()
-exclusions.test <- c(31) #keine Blink-Daten vorhanden
-vpn <- vpn.eye %>% setdiff(exclusions.test) #vpdat$filename
+#exclusions.test <- c(31) #keine Blink-Daten vorhanden
+#vpn <- vpn.eye %>% setdiff(exclusions.test) #vpdat$filename
 
 ga <- numeric()
 
@@ -187,31 +187,38 @@ options(warn=0)
 # Plot single participants
 require(ggplot2)
 
-plotdat <- data.frame(subj=rep(1:nrow(ga),each=ncol(ga)),
-                      sec=seq(st/1000,en/1000-1/newhz,1/newhz),
+ga$subj <- rep(vpn,each=3)
+
+plotdat <- data.frame(sec=seq(st/1000,en/1000-1/newhz,1/newhz),
                       y=as.numeric(t(ga)))
 plotdat <- plotdat %>%
-  mutate(cov = case_when(subj < 48 ~ "pre",
-                         subj > 48 ~ "post"))
+  mutate(subj=rep(vpn,each=2100),             #pro VP 700 Werte pro Session (3x)
+         session=rep(1:3, each = 700))
 
-ggplot(plotdat, aes(y=y, x=sec, group=subj)) +
+plotdat <- plotdat %>%
+  mutate(cov = case_when(subj <= 14 ~ "pre",                 #folgende VP-Nummern waren vor Corona: 1-14, 17, 18
+                         subj >= 17 & subj <= 18 ~ "pre",
+                         subj >= 15 & subj <= 16 ~ "post",
+                         subj >= 19 ~ "post"))
+
+ggplot(plotdat, aes(y=y, x=sec, group=interaction(subj, session))) +
   geom_line(aes(color=cov), alpha = 0.5) +
   labs(x = "Time (s)") +
   labs(y = "Pupil change (mm)")
 
-ggsave(paste(savepath,"Pupil-Changes_SingleSubj.png",sep=""),width=12,height=9,units="cm",scale=1.2)
-
-# Plot grand averages
-y    <- apply(ga,2,mean,na.rm=TRUE)
-se   <- apply(ga,2,sd,na.rm=TRUE)/sqrt(nrow(ga))
-sec  <- seq(st/1000,en/1000-1/newhz,1/newhz)
-plotdat <- data.frame(sec,y,se)
-
-ggplot(plotdat, aes(y=y, x=sec)) +
-  geom_line() +
-  geom_ribbon(data=plotdat,aes(ymin=y-se,ymax=y+se),alpha=0.3) +
-  labs(x = "Time (s)") +
-  labs(y = "Pupil change (mm)")
-
-ggsave(paste(savepath,"Pupil-Changes_GAst0.png",sep=""),width=12,height=9,units="cm",scale=1.2)
+#ggsave(paste(savepath,"Pupil-Changes_SingleSubj.png",sep=""),width=12,height=9,units="cm",scale=1.2)
+# 
+# # Plot grand averages
+# y    <- apply(ga,2,mean,na.rm=TRUE)
+# se   <- apply(ga,2,sd,na.rm=TRUE)/sqrt(nrow(ga))
+# sec  <- seq(st/1000,en/1000-1/newhz,1/newhz)
+# plotdat <- data.frame(sec,y,se)
+# 
+# ggplot(plotdat, aes(y=y, x=sec)) +
+#   geom_line() +
+#   geom_ribbon(data=plotdat,aes(ymin=y-se,ymax=y+se),alpha=0.3) +
+#   labs(x = "Time (s)") +
+#   labs(y = "Pupil change (mm)")
+# 
+# ggsave(paste(savepath,"Pupil-Changes_GAst0.png",sep=""),width=12,height=9,units="cm",scale=1.2)
 
