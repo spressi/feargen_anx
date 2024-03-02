@@ -315,7 +315,7 @@ print(pupil.grandAverage.plot <- pupil %>% dplyr::filter(phase=="Gen") %>% #filt
 
 #Figure Pupil
 #cowplot::plot_grid(pupil.grandAverage.plot, pupil.gradient.plot, ncol=1, labels="auto") %>% ggsave("Figure 3. Pupil.png", ., device="png", path=paste0(path.rds, "../../5 Output/1 Paper - Fear Generalization x Attention/"), width=16.26, height=21, units="cm") #Figure 3
-{pupil.gradient.plot + pupil.grandAverage.plot + plot_annotation(tag_levels = 'a')} %>% ggsave("figures/Figure Pupil.png", plot=., device="png", scale=2, dpi=300, width=6.5, height = 6.5 / sqrt(2) / 2, units="in")
+{pupil.gradient.plot + pupil.grandAverage.plot + plot_annotation(tag_levels = 'a')} %>% ggsave("figures/Figure Pupil.png", plot=., device="png", scale=1.45, dpi=300, width=6.5, height = 6.5 / sqrt(2) / 2, units="in")
 
 
 # Reliability -------------------------------------------------------------

@@ -157,10 +157,29 @@ print(ratings.trials.plot <- ratings.ga.trials %>% ggplot(aes(x=trial, y=rating,
         geom_ribbon(aes(ymin=rating-rating.se*1.96, ymax=rating+rating.se*1.96, fill=threat), color=NA, alpha=.1) +
         geom_point() + geom_line() +
         geom_vline(xintercept = c(preAcqEnd, acqEnd), linetype=2) +
+        
+        #annotations near the lines
+        # annotate("label", label="Habituation", x = preAcqEnd-.5, hjust = "right", y = Inf, vjust = "top") +
+        # annotate("label", label="Acquisition", x = mean(c(preAcqEnd, acqEnd)), y = Inf, vjust = "top") +
+        # annotate("label", label="Generalization", x = acqEnd+.5, hjust="left", y = Inf, vjust = "top") +
+        
+        #annotations with equal distance (good of same amount of letters per label)
+        # annotate("label", label="Hab", x = mean(c(0, preAcqEnd)), y = Inf, vjust = "top") +
+        # annotate("label", label="Acq", x = mean(c(preAcqEnd, acqEnd)), y = Inf, vjust = "top") +
+        # annotate("label", label="Gen", x = 2*mean(c(preAcqEnd, acqEnd)) - mean(c(0, preAcqEnd)), y = Inf, vjust = "top") +
+        
+        #annotations in the middle of each phase
+        annotate("label", label="Hab.", x = mean(c(0, preAcqEnd)), y = Inf, vjust = "top") +
+        annotate("label", label="Acquisition", x = mean(c(preAcqEnd, acqEnd)), y = Inf, vjust = "top") +
+        annotate("label", label="Generalization", x = mean(c(acqEnd, trials.n)), y = Inf, vjust = "top") +
+        
+        coord_cartesian(clip="off") +
         #scale_color_manual(values=colors, labels=c("CS-", paste0("GS", 1:4), "CS+")) + scale_shape_discrete(labels=c("CS-", paste0("GS", 1:4), "CS+")) + scale_fill_manual(values=colors, labels=c("CS-", paste0("GS", 1:4), "CS+")) +
         scale_color_manual(values=colors) + scale_fill_manual(values=colors) + 
         guides(colour=guide_legend(reverse=T), shape=guide_legend(reverse=T), fill=guide_legend(reverse=T)) + 
-        ylab("Threat Rating (1-5)") + xlab("Trial Count") + labs(color="Threat", shape="Threat", fill="Threat") + myGgTheme)
+        ylab("Threat Rating (1-5)") + xlab("Trial Count") + labs(color="Threat", shape="Threat", fill="Threat") + 
+        scale_x_continuous(expand=c(1/trials.n, 1/trials.n)) + 
+        myGgTheme)
 #ggsave("plots/Ratings Trials.png", plot=ratings.trials.plot, scale=1, device="png", dpi=300, units="in", width=1920/300, height = 1080/300)
 
 #mean scores generalization phase
@@ -196,8 +215,10 @@ print(ratings.gradient.STAI <- ratings.ga.gen.STAI %>% ggplot(aes(x=threat_both,
 
 #Figure Ratings
 #cowplot::plot_grid(ratings.trials.plot, ratings.gradient.plot + theme(legend.position="none"), ncol=1, labels="auto") %>% ggsave("figures/Figure Ratings (old).png", plot=., scale=1, device="png", dpi=300, units="in", width=6.5, height = 6.5 * 2 / sqrt(2))
-#{ratings.trials.plot / ((ratings.gradient.plot + theme(legend.position="none")) + (ratings.gradient.STAI + ylab("")) + plot_layout(widths=c(2, 1))) + plot_annotation(tag_levels = 'a')} %>% ggsave("figures/Figure Ratings.png", plot=., scale=1, device="png", dpi=300, units="in", width=6.5, height = 6.5 * 2 / sqrt(2))
-{ratings.trials.plot / ratings.gradient.plot / ratings.gradient.STAI + plot_annotation(tag_levels = 'a')} %>% ggsave("figures/Figure Ratings.png", plot=., scale=1, device="png", dpi=300, units="in", width=6.5, height = 6.5 * 3 / sqrt(2))
+#{ratings.trials.plot / ratings.gradient.plot / ratings.gradient.STAI + plot_annotation(tag_levels = 'a')} %>% ggsave("figures/Figure Ratings.png", plot=., scale=1.8, device="png", dpi=300, units="in", width=6.5/2, height = 6.5/2 * 3 / sqrt(2))
+{ratings.trials.plot / ((ratings.gradient.plot + theme(legend.position="none")) + (ratings.gradient.STAI + ylab("")) + plot_layout(widths=c(1.25, 1))) + plot_annotation(tag_levels = 'a')} %>% 
+  ggsave("figures/Figure Ratings.png", plot=., scale=1.45, device="png", dpi=300, units="in", width=6.5, height = 6.5 / sqrt(2))
+
 
 # #mean scores first generalization phase
 # ratings.ga.gen.subj = ratings.first.gen %>% group_by(threat, threat_num, threat_both, subject) %>% summarise(rating.se=se(rating, na.rm=T), rating=mean(rating, na.rm=T))
