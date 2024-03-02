@@ -259,23 +259,10 @@ print(pupil.gradient.plot <- pupil.ga.gen %>% ggplot(aes(x=threat, y=mmChange, c
         scale_fill_manual(values=rep("grey", 6), guide=guide_legend(reverse=T)) +
         scale_x_discrete(labels=c("CS-", paste0("GS", 1:4), "CS+")) +
         ylab("Pupil Size Change (mm)") + xlab("Threat") + labs(color="Threat") +
-        theme_bw() + theme(
+        myGgTheme + theme(
           #aspect.ratio = 1,
-          legend.position = "none",
-          panel.background = element_rect(fill="white", color="white"),
-          legend.background = element_rect(fill="white", color="grey"),
-          legend.key=element_rect(fill='white'),
-          legend.text = element_text(size=14, color="black"),
-          legend.title = element_text(size=14, color="black"),
-          axis.text = element_text(color="black"),
-          axis.text.x = element_text(size=16, color="black"),
-          axis.text.y = element_text(size=16, color="black"),
-          strip.text.x = element_text(size=12, color="black"),
-          axis.ticks.x = element_line(color="black"),
-          axis.line.x = element_line(color="black"),
-          axis.line.y = element_line(color="black"),
-          axis.title = element_text(size=16, color="black"),
-          axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 0, l = 0, "pt"))))
+          #axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 0, l = 0, "pt")), #space between y-axis and ylab
+          legend.position = "none"))
 #ggsave("plots/Pupil Gradient.png", plot=pupil.gradient.plot, device="png", dpi=300, width=1920/300, height=1080/300, units="in")
 
 #pupil grand average for generalization & only between errorbars
@@ -292,22 +279,9 @@ print(pupil.grandAverage.plot <- pupil %>% dplyr::filter(phase=="Gen") %>% #filt
         scale_color_manual(values=colors, labels=c("CS-", paste0("GS", 1:4), "CS+")) + scale_shape_discrete(labels=c("CS-", paste0("GS", 1:4), "CS+")) + scale_fill_manual(values=colors, labels=c("CS-", paste0("GS", 1:4), "CS+")) + 
         guides(colour=guide_legend(reverse=T), fill=guide_legend(reverse=T)) + 
         ylab("Pupil Size Change (mm)") + xlab("Trial Time (sec)") + labs(color="Threat", fill="Threat") +
-        theme_bw() + theme(
-          #aspect.ratio = 1,
-          panel.background = element_rect(fill="white", color="white"),
-          legend.background = element_rect(fill="white", color="grey"),
-          legend.key=element_rect(fill='white'),
-          axis.text = element_text(color="black"),
-          axis.ticks.x = element_line(color="black"),
-          axis.line.x = element_line(color="black"),
-          axis.line.y = element_line(color="black"),
-          legend.text = element_text(size=14, color="black"),
-          legend.title = element_text(size=14, color="black"),
-          strip.text.x = element_text(size=12, color="black"),
-          axis.text.x = element_text(size=16, color="black"),
-          axis.text.y = element_text(size=16, color="black"),
-          axis.title = element_text(size=16, color="black"),
-          axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 0, l = 0, "pt"))))
+        scale_x_continuous(expand=c(0, 0)) + 
+        theme(axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 0, l = 0, "pt"))) + #space between y-axis and ylab
+        myGgTheme)
 #pupil.grandAverage.plot %>% ggsave("plots/Pupil Time.png", ., device="png", dpi=300, width=1920/300, height=1080/300, units="in")
 
 #TODO diagnostic main effect
