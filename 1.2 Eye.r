@@ -1151,15 +1151,18 @@ eye.diagnosticity.ms_sqrt.analysis %>% filter(subject %in% exclusions.eye.ms == 
 
 eye.diagnosticity.ms_sqrt.subj.analysis = eye.diagnosticity.ms_sqrt.analysis %>% filter(subject %in% exclusions.eye.ms == F) #manual exclusion because of extreme latency
 print(eye.main.ms.sqrt <- eye.diagnosticity.ms_sqrt.subj.analysis %>% group_by(diagnostic, Diagnosticity, ROI) %>% summarise(ms.se=se(ms, na.rm=T), ms=mean(ms, na.rm=T)) %>% 
-        ggplot(aes(x=diagnostic, y=ms, color=ROI, shape=Diagnosticity)) + 
+        ggplot(aes(x=diagnostic, y=ms, color=ROI, fill=ROI, shape=Diagnosticity)) + 
         #ggplot(aes(x=diagnostic, y=ms, color=as.numeric(ROI)==as.numeric(diagnostic))) + 
         geom_dotplot(data=eye.diagnosticity.ms_sqrt.subj.analysis %>% filter(ROI=="Eyes"), mapping=aes(group=interaction(ROI, diagnostic), fill=ROI), stackdir="down", binaxis="y", alpha=.25, color="black", stackratio=1, dotsize=.75) +
         geom_dotplot(data=eye.diagnosticity.ms_sqrt.subj.analysis %>% filter(ROI!="Eyes"), mapping=aes(group=interaction(ROI, diagnostic), fill=ROI), stackdir="up", binaxis="y", alpha=.25, color="black", stackratio=1, dotsize=.75) +
         geom_point(size=6, position=dodge) + geom_errorbar(aes(ymin=ms-ms.se*1.96, ymax=ms+ms.se*1.96), size=2, position=dodge) +
-        scale_color_discrete(labels=c("Eyes", "Mouth/Nose")) +
+        scale_color_discrete(labels=c("Eyes", "Mouth/Nose")) + scale_fill_discrete(labels=c("Eyes", "Mouth/Nose")) +
+        scale_shape_manual(values=c(24, 25)) + #up vs. down triangle
         #scale_color_discrete(name="Diagnosticity of ROI", labels=c("Diagnostic", "Non-Diagnostic")) +
         #scale_color_viridis_d(labels=c("Eyes", "Mouth/Nose")) +
         ylab(expression("Latency to ROI (" * sqrt(sec) * ")")) + xlab("Diagnostic Region") + myGgTheme)
+#ggsave("plots/Eye Latency (sqrt).png", plot=eye.main.ms.sqrt, scale=1, device="png", dpi=300, units="in", width=1920/300, height = 1080/300)
+
 
 #for descriptive values, back-transform to seconds for interpretability (need to start with ms_sqrt.analysis due to Winsorizing beding slightly different)
 eye.diagnosticity.ms_sqrt.analysis %>% group_by(Diagnosticity) %>% summarise(ms=mean(ms, na.rm=T)^2)
@@ -1194,12 +1197,15 @@ print(eye.ms.spai <- eye.diagnosticity.ms.spaiXdia %>%
   facet_wrap(vars(Diagnosticity)) +
   geom_errorbar(aes(ymin=ms-ms.se*1.96, ymax=ms+ms.se*1.96), width=spai.width) +
   geom_smooth(method="lm", color="black") + geom_point(size=4) +
-  ylab(expression("Average Time to ROIs (" * sqrt(sec) * ")")) +
+  ylab(expression("Latency to ROI (" * sqrt(sec) * ")")) +
   scale_color_viridis_c() + myGgTheme + theme(legend.position = "none"))
 #ggsave("plots/Eye Latency SPAI.png", plot=eye.ms.spai, scale=1, device="png", dpi=300, units="in", width=1920/300, height = 1080/300)
 
 #Figure Eye
-#cowplot::plot_grid(eye.main.ms.sqrt, eye.ms.spai, ncol=1, labels="auto") %>% ggsave("figures/Figure Eye.png", plot=., scale=1, device="png", dpi=300, units="in", width=6.5, height = 6.5 * 2 / sqrt(2))
+#cowplot::plot_grid(eye.main.ms.sqrt, eye.ms.spai, ncol=1, labels="auto") %>% ggsave("figures/Figure Eye.png", plot=., scale=1.45, device="png", dpi=300, units="in", width=6.5, height = 6.5 / sqrt(2))
+{(eye.main.ms.sqrt / wrap_elements(full=eye.ms.spai)) + plot_annotation(tag_levels = 'a') + plot_layout(heights=c(1, 1.25))} %>%
+  ggsave("figures/Figure Eye.png", plot=., scale=1.45, device="png", dpi=300, units="in", width=6.5, height = 6.5 / sqrt(2))
+#{(free(eye.main.ms.sqrt) / free(eye.ms.spai + facet_wrap(vars(Diagnosticity), ncol=1))) + plot_annotation(tag_levels = 'a')} %>% ggsave("figures/Figure Eye.png", plot=., scale=1.45, device="png", dpi=300, units="in", width=6.5/2, height = 6.5/2*3 / sqrt(2))
 
 
 #STAI x Diagnosticity

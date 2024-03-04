@@ -171,7 +171,7 @@ print(heart.trialtime.plot <- heart.ga.gen.time %>% ggplot(aes(x=time, y=HRchang
         #geom_errorbar(aes(ymin=HRchange-HRchange.se*1.96, ymax=HRchange+HRchange.se*1.96)) +
         geom_point(size=3) + geom_line() + 
         scale_color_manual(values=colors, labels=c("CS-", paste0("GS", 1:4), "CS+")) + scale_shape_discrete(labels=c("CS-", paste0("GS", 1:4), "CS+")) + scale_fill_manual(values=colors, labels=c("CS-", paste0("GS", 1:4), "CS+")) + 
-        ylab("Heart Rate Change (bpm)") + xlab("Trial Time (sec)") + labs(color="Threat", shape="Threat", fill="Threat") + myGgTheme)
+        ylab(expression(Delta ~ "Heart Rate (bpm)")) + xlab("Trial Time (sec)") + labs(color="Threat", shape="Threat", fill="Threat") + myGgTheme)
 #ggsave("plots/Heart Time.png", plot=heart.trialtime.plot, scale=1, device="png", dpi=300, units="in", width=1920/300, height = 1080/300)
 
 # Split in HSA/LSA 
@@ -190,7 +190,7 @@ print(heart.trialtime.spai.plot <- heart.ga.gen.time.spai %>% ggplot(aes(x=time,
         geom_point(size=3) + geom_line() + 
         facet_wrap(vars(spai.split), labeller = labeller(spai.split = c(LSA = "Low Social Anxiety", HSA = "High Social Anxiety"))) +
         scale_color_manual(values=colors, labels=c("CS-", paste0("GS", 1:4), "CS+")) + scale_shape_discrete(labels=c("CS-", paste0("GS", 1:4), "CS+")) + scale_fill_manual(values=colors, labels=c("CS-", paste0("GS", 1:4), "CS+")) + 
-        ylab("Heart Rate Change (bpm)") + xlab("Trial Time (sec)") + labs(color="Threat", shape="Threat", fill="Threat") + myGgTheme)
+        ylab(expression(Delta ~ "Heart Rate (bpm)")) + xlab("Trial Time (sec)") + labs(color="Threat", shape="Threat", fill="Threat") + myGgTheme)
 #ggsave("plots/Heart Time SPAI.png", plot=heart.trialtime.spai.plot, scale=1, device="png", dpi=300, units="in", width=1920*1.7/300, height = 1080/300)
 
 
@@ -227,21 +227,20 @@ print(heart.gradient.plot <- heart.ga.gen %>% ggplot(aes(x=threat, y=HRchange, c
         #scale_fill_manual(values=colors, guide=guide_legend(reverse=T)) +
         scale_fill_manual(values=rep("grey", 6), guide=guide_legend(reverse=T)) +
         scale_x_discrete(labels=c("CS-", paste0("GS", 1:4), "CS+")) +
-        ylab("Heart Rate Change (bpm)") + xlab("Threat") + labs(color="Threat") +
+        ylab(expression(Delta ~ "Heart Rate (bpm)")) + xlab("Threat") + labs(color="Threat") +
         myGgTheme + theme(
           #aspect.ratio = 1,
-          legend.position = "none",
-          axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 0, l = 0, "pt"))))
+          axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 0, l = 0, "pt")),
+          legend.position = "none"))
 #ggsave("plots/Heart Gradient.png", plot=heart.gradient.plot, scale=1, device="png", dpi=300, units="in", width=1920/300, height = 1080/300)
 
 heart.ga.gen %>% select(threat, HRchange, HRchange.se) #descriptive values
 
 #Figure Heart
 #cowplot::plot_grid(heart.trialtime.plot, heart.gradient.plot, ncol=1, labels="auto") %>% ggsave("figures/Figure Heart (old).png", plot=., scale=.7, device="png", dpi=300, units="in", width=6.5, height = 6.5 * 2 / sqrt(2))
-
-#using patchwork-package
-(heart.gradient.plot + heart.trialtime.plot)/heart.trialtime.spai.plot + plot_annotation(tag_levels = 'a')
-#ggsave("figures/Figure Heart.png", scale=1, device="png", dpi=300, units="in", width=6.5, height = 6.5 / sqrt(2))
+{(heart.gradient.plot + (heart.trialtime.plot + theme(axis.title.y=element_blank())))/heart.trialtime.spai.plot + plot_annotation(tag_levels = 'a') + 
+    plot_layout(axis_titles = "collect_y", guides = "collect")} %>% 
+  ggsave("figures/Figure Heart.png", plot=., scale=1.45, device="png", dpi=300, units="in", width=6.5, height = 6.5 / sqrt(2))
 
 #mean scores generalization phase by pairs
 # heart.simple.gen %>% group_by(threat, pairs, subject) %>% summarise(HRchange.se = se(HRchange, na.rm=T), HRchange = mean(HRchange, na.rm=T)) %>% 

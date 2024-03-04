@@ -258,7 +258,7 @@ print(pupil.gradient.plot <- pupil.ga.gen %>% ggplot(aes(x=threat, y=mmChange, c
         #scale_fill_manual(values=colors, guide=guide_legend(reverse=T)) +
         scale_fill_manual(values=rep("grey", 6), guide=guide_legend(reverse=T)) +
         scale_x_discrete(labels=c("CS-", paste0("GS", 1:4), "CS+")) +
-        ylab("Pupil Size Change (mm)") + xlab("Threat") + labs(color="Threat") +
+        ylab(expression(Delta ~ "Pupil Size (mm)")) + xlab("Threat") + labs(color="Threat") +
         myGgTheme + theme(
           #aspect.ratio = 1,
           #axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 0, l = 0, "pt")), #space between y-axis and ylab
@@ -278,7 +278,7 @@ print(pupil.grandAverage.plot <- pupil %>% dplyr::filter(phase=="Gen") %>% #filt
         geom_line(size=2) +
         scale_color_manual(values=colors, labels=c("CS-", paste0("GS", 1:4), "CS+")) + scale_shape_discrete(labels=c("CS-", paste0("GS", 1:4), "CS+")) + scale_fill_manual(values=colors, labels=c("CS-", paste0("GS", 1:4), "CS+")) + 
         guides(colour=guide_legend(reverse=T), fill=guide_legend(reverse=T)) + 
-        ylab("Pupil Size Change (mm)") + xlab("Trial Time (sec)") + labs(color="Threat", fill="Threat") +
+        ylab(expression(Delta ~ "Pupil Size (mm)")) + xlab("Trial Time (sec)") + labs(color="Threat", fill="Threat") +
         scale_x_continuous(expand=c(0, 0)) + 
         theme(axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 0, l = 0, "pt"))) + #space between y-axis and ylab
         myGgTheme)
