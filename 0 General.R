@@ -229,16 +229,17 @@ myGgTheme <- theme_bw() + theme(
   panel.background = element_rect(fill="white", color="white"),
   legend.background = element_rect(fill="white", color="grey"),
   legend.key=element_rect(fill='white'),
-  axis.text = element_text(color="black"),
+  strip.background =element_rect(fill="white"),
   axis.ticks.x = element_line(color="black"),
   axis.line.x = element_line(color="black"),
   axis.line.y = element_line(color="black"),
-  legend.text = element_text(size=14, color="black"),
-  legend.title = element_text(size=14, color="black"),
-  strip.text.x = element_text(size=12, color="black"),
+  axis.text = element_text(color="black"),
   axis.text.x = element_text(size=16, color="black"),
   axis.text.y = element_text(size=16, color="black"),
-  axis.title = element_text(size=16, color="black"))
+  axis.title = element_text(size=16, color="black"),
+  legend.text = element_text(size=14, color="black"),
+  legend.title = element_text(size=14, color="black"),
+  strip.text = element_text(size=12, color="black"))
 #)
 
 # Files -------------------------------------------------------------------
