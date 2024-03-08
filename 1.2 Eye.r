@@ -1204,7 +1204,7 @@ print(eye.ms.spai <- eye.diagnosticity.ms.spaiXdia %>%
 #Figure Eye
 #cowplot::plot_grid(eye.main.ms.sqrt, eye.ms.spai, ncol=1, labels="auto") %>% ggsave("figures/Figure Eye.png", plot=., scale=1.45, device="png", dpi=300, units="in", width=6.5, height = 6.5 / sqrt(2))
 {(eye.main.ms.sqrt / wrap_elements(full=eye.ms.spai)) + plot_annotation(tag_levels = 'a') + plot_layout(heights=c(1, 1.25))} %>%
-  ggsave("figures/Figure Eye.png", plot=., scale=1.45, device="png", dpi=300, units="in", width=6.5, height = 6.5 / sqrt(2))
+  ggsave("figures/Figure Eye.png", plot=., scale=1.45, device="png", dpi=300, units="in", width=6.5, height = 6.5) #alternative height: 6.5 / sqrt(2)
 #{(free(eye.main.ms.sqrt) / free(eye.ms.spai + facet_wrap(vars(Diagnosticity), ncol=1))) + plot_annotation(tag_levels = 'a')} %>% ggsave("figures/Figure Eye.png", plot=., scale=1.45, device="png", dpi=300, units="in", width=6.5/2, height = 6.5/2*3 / sqrt(2))
 
 
