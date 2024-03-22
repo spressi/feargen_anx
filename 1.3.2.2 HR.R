@@ -285,14 +285,14 @@ for (i in 2:6) {
   levels = c(1, i)
   cat(paste0("\n\nComparing levels: ", paste(levels, collapse=" vs. "), "\n"))
   heart.simple.threat.gen %>% filter(threat %in% levels) %>% 
-    t.test(HRchange ~ threat, ., #alternative="greater", 
+    t.test(HRchange ~ threat, ., alternative="greater", 
            paired=T) %>% apa::t_apa(es_ci=T)
 }
 
 # SPAI
 heart.simple.gen.lvl = heart.simple.gen %>% group_by(subject, SPAI, STAI) %>% summarise(HRchange.se = se(HRchange, na.rm=T), HRchange.m = mean(HRchange, na.rm=T))
 heart.simple.gen.lvl %>% with(cor.test(HRchange.m, SPAI, alternative="less")) %>% correlation_out()
-heart.simple.gen.lvl %>% with(cor.test(HRchange.m, SPAI)) %>% correlation_out()
+heart.simple.gen.lvl %>% with(cor.test(HRchange.m, SPAI)) %>% apa::cor_apa(r_ci=T) #correlation_out()
 print(heart.spai.plot <- heart.simple.gen.lvl %>% ggplot(aes(x=SPAI, y=HRchange.m, color=SPAI, fill=SPAI)) +
         geom_errorbar(aes(ymin=HRchange.m-HRchange.se*1.96, ymax=HRchange.m+HRchange.se*1.96), width=spai.width) +
         stat_smooth(method="lm", color = "black") +
