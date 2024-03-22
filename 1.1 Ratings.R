@@ -292,6 +292,70 @@ ez::ezANOVA(data=ratings.subject.gen.diagnostic,
             between=.(STAI.z), observed=STAI.z,
             detailed=T, type=2) %>% apa::anova_apa(force_sph_corr=T)
 
+
+# threat main effect: t-tests of adjacent threat-levels
+ratings.subject.gen = ratings.gen %>% group_by(subject, threat, threat_num) %>% summarise(rating.m=mean(rating, na.rm=T), rating.se=se(rating, na.rm=T))
+ratings.subject.first.gen = ratings.first.gen %>% group_by(subject, threat, threat_num) %>% summarise(rating.m=mean(rating, na.rm=T), rating.se=se(rating, na.rm=T))  # for first half
+for (i in (min(ratings.subject.gen$threat_num)+1):max(ratings.subject.gen$threat_num)) {
+  levels = c(i-1, i)
+  cat(paste0("\n\nComparing levels: ", paste(levels, collapse=" vs. "), "\n"))
+  ratings.subject.gen %>% filter(threat_num %in% levels) %>%
+    t.test(rating.m ~ threat, ., paired=T) %>% apa::t_apa(es_ci=T)
+}
+
+# marginal diagnostic main effect (descriptives because dichotomous)
+ratings.gen %>% group_by(diagnostic, subject) %>% summarise(rating = mean(rating, na.rm=T)) %>% summarise(rating.m = mean(rating, na.rm=T), rating.sd = sd(rating, na.rm=T), rating.se = se(rating, na.rm=T)) %>% arrange(desc(rating.m))
+
+# t-tests of diagnostic regions within threat-levels
+# ratings.subject.gen.diagnostic = ratings.gen %>% group_by(subject, SPAI, STAI, threat, threat_num, diagnostic) %>% summarise(rating.m=mean(rating, na.rm=T), rating.se=se(rating, na.rm=T))
+# for (i in 1:6) {
+#   cat(paste0("\n\nDiagnostic regions in level: ", i, "\n"))
+#   ratings.subject.gen.diagnostic %>% filter(threat_num == i) %>% 
+#     t.test(rating.m ~ diagnostic, ., paired=T) %>% apa::t_apa(es_ci=T)
+# }
+
+#SPAI main effect (i.e., correlation)
+ratings.subject.gen.lvl = ratings.subject.gen.diagnostic %>% group_by(subject, SPAI, STAI) %>% summarise(rating.se = se(rating.m, na.rm=T), rating.m = mean(rating.m, na.rm=T))
+ratings.subject.gen.lvl %>% with(cor.test(rating.m, SPAI, alternative="greater")) %>% apa::cor_apa(r_ci=T) #%>% correlation_out()
+ratings.subject.gen.lvl %>% ggplot(aes(x=SPAI, y=rating.m, color=SPAI, fill=SPAI)) +
+  geom_errorbar(aes(ymin=rating.m-rating.se*1.96, ymax=rating.m+rating.se*1.96), width=spai.width) +
+  stat_smooth(method="lm", color = "black") +
+  #geom_point(size=4, shape=21, color="black") +
+  geom_point(size=4) + 
+  ylab("Average Rating (1-5)") +
+  scale_color_viridis_c() + scale_fill_viridis_c() + myGgTheme + theme(legend.position = "none")
+
+
+#STAI main effect (i.e., correlation)
+ratings.subject.gen.lvl = ratings.subject.gen.diagnostic %>% group_by(subject, SPAI, STAI) %>% summarise(rating.se = se(rating.m, na.rm=T), rating.m = mean(rating.m, na.rm=T))
+ratings.subject.gen.lvl %>% with(cor.test(rating.m, STAI, alternative="greater")) %>% apa::cor_apa(r_ci=T) #%>% correlation_out()
+ratings.subject.gen.lvl %>% ggplot(aes(x=STAI, y=rating.m, color=STAI, fill=STAI)) +
+  geom_errorbar(aes(ymin=rating.m-rating.se*1.96, ymax=rating.m+rating.se*1.96), width=.4) +
+  stat_smooth(method="lm", color = "black") +
+  #geom_point(size=4, shape=21, color="black") +
+  geom_point(size=4) + 
+  ylab("Average Rating (1-5)") +
+  scale_color_viridis_c() + scale_fill_viridis_c() + myGgTheme + theme(legend.position = "none")
+
+#SPAI * threat * diagnostic
+# ratings.subject.gen.diagnostic %>% ggplot(aes(x=SPAI, y=rating.m, color=diagnostic, fill=diagnostic, shape=diagnostic)) +
+#   facet_wrap(vars(threat)) +
+#   geom_smooth(method="lm", color = "black") + geom_smooth(method="lm", color = "black", fill=NA) + #print regression lines on top of confidence bands
+#   geom_point(size=4) +
+#   ylab("Average Rating (1-5)") +
+#   myGgTheme + myGgTheme + theme(legend.position = "none")
+  
+# ratings.subject.gen.diagnostic %>% ggplot(aes(x=SPAI, y=rating.m, color=threat, fill=threat, shape=threat)) +
+#   facet_wrap(vars(diagnostic)) +
+#   geom_smooth(method="lm", color = "black") + geom_smooth(method="lm", color = "black", fill=NA) + #print regression lines on top of confidence bands
+#   #geom_point(size=4) +
+#   ylab("Average Rating (1-5)") +
+#   scale_color_manual(values=colors) + scale_fill_manual(values=colors) + 
+#   guides(colour=guide_legend(reverse=T), shape=guide_legend(reverse=T), fill=guide_legend(reverse=T)) + 
+#   myGgTheme + myGgTheme #+ theme(legend.position = "none")
+#diagnostic eyes: low SPAI <=> more differentiation
+#diagnostic m/n:  low SPAI <=> less fear generalization (but similar differentiation)
+
 # ANOVA Generalization Phase per Block 
 ratings.subject.gen.diagnostic = ratings.gen %>% 
   mutate(block = as_factor(block)) %>%
@@ -367,58 +431,6 @@ ratings.subject.first.gen.diagnostic = ratings.first.gen %>% group_by(subject, S
 #             between=.(SPAI.z), observed=SPAI.z,
 #             #between=.(STAI.z), observed=STAI.z,
 #             detailed=T, type=2) %>% apa::anova_apa(force_sph_corr=T)
-
-
-# threat main effect: t-tests of adjacent threat-levels
-ratings.subject.gen = ratings.gen %>% group_by(subject, threat, threat_num) %>% summarise(rating.m=mean(rating, na.rm=T), rating.se=se(rating, na.rm=T))
-ratings.subject.first.gen = ratings.first.gen %>% group_by(subject, threat, threat_num) %>% summarise(rating.m=mean(rating, na.rm=T), rating.se=se(rating, na.rm=T))  # for first half
-for (i in (min(ratings.subject.gen$threat_num)+1):max(ratings.subject.gen$threat_num)) {
-  levels = c(i-1, i)
-  cat(paste0("\n\nComparing levels: ", paste(levels, collapse=" vs. "), "\n"))
-  ratings.subject.gen %>% filter(threat_num %in% levels) %>%
-    t.test(rating.m ~ threat, ., paired=T) %>% apa::t_apa(es_ci=T)
-}
-
-# marginal diagnostic main effect (descriptives because dichotomous)
-ratings.gen %>% group_by(diagnostic, subject) %>% summarise(rating = mean(rating, na.rm=T)) %>% summarise(rating.m = mean(rating, na.rm=T), rating.sd = sd(rating, na.rm=T), rating.se = se(rating, na.rm=T)) %>% arrange(desc(rating.m))
-
-# t-tests of diagnostic regions within threat-levels
-# ratings.subject.gen.diagnostic = ratings.gen %>% group_by(subject, SPAI, STAI, threat, threat_num, diagnostic) %>% summarise(rating.m=mean(rating, na.rm=T), rating.se=se(rating, na.rm=T))
-# for (i in 1:6) {
-#   cat(paste0("\n\nDiagnostic regions in level: ", i, "\n"))
-#   ratings.subject.gen.diagnostic %>% filter(threat_num == i) %>% 
-#     t.test(rating.m ~ diagnostic, ., paired=T) %>% apa::t_apa(es_ci=T)
-# }
-
-#STAI main effect (i.e., correlation)
-ratings.subject.gen.lvl = ratings.subject.gen.diagnostic %>% group_by(subject, SPAI, STAI) %>% summarise(rating.se = se(rating.m, na.rm=T), rating.m = mean(rating.m, na.rm=T))
-ratings.subject.gen.lvl %>% with(cor.test(rating.m, SPAI, alternative="greater")) %>% correlation_out()
-ratings.subject.gen.lvl %>% ggplot(aes(x=STAI, y=rating.m, color=STAI, fill=STAI)) +
-  geom_errorbar(aes(ymin=rating.m-rating.se*1.96, ymax=rating.m+rating.se*1.96), width=.4) +
-  stat_smooth(method="lm", color = "black") +
-  #geom_point(size=4, shape=21, color="black") +
-  geom_point(size=4) + 
-  ylab("Average Rating (1-5)") +
-  scale_color_viridis_c() + scale_fill_viridis_c() + myGgTheme + theme(legend.position = "none")
-
-#SPAI * threat * diagnostic
-# ratings.subject.gen.diagnostic %>% ggplot(aes(x=SPAI, y=rating.m, color=diagnostic, fill=diagnostic, shape=diagnostic)) +
-#   facet_wrap(vars(threat)) +
-#   geom_smooth(method="lm", color = "black") + geom_smooth(method="lm", color = "black", fill=NA) + #print regression lines on top of confidence bands
-#   geom_point(size=4) +
-#   ylab("Average Rating (1-5)") +
-#   myGgTheme + myGgTheme + theme(legend.position = "none")
-  
-# ratings.subject.gen.diagnostic %>% ggplot(aes(x=SPAI, y=rating.m, color=threat, fill=threat, shape=threat)) +
-#   facet_wrap(vars(diagnostic)) +
-#   geom_smooth(method="lm", color = "black") + geom_smooth(method="lm", color = "black", fill=NA) + #print regression lines on top of confidence bands
-#   #geom_point(size=4) +
-#   ylab("Average Rating (1-5)") +
-#   scale_color_manual(values=colors) + scale_fill_manual(values=colors) + 
-#   guides(colour=guide_legend(reverse=T), shape=guide_legend(reverse=T), fill=guide_legend(reverse=T)) + 
-#   myGgTheme + myGgTheme #+ theme(legend.position = "none")
-#diagnostic eyes: low SPAI <=> more differentiation
-#diagnostic m/n:  low SPAI <=> less fear generalization (but similar differentiation)
 
 # Gradient Analysis -----------------------------------------------------------
 individualPlots = F
