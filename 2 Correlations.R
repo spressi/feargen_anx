@@ -13,10 +13,10 @@ requirePackage("lmerTest")
 
 
 data.wide = full_join(questionnaires, ratings.wide, by="subject") %>% 
-  full_join(eyes.wide, by=c("subject", "SPAI", "STAI")) %>% 
   full_join(pupil.wide, by="subject") %>% 
   full_join(heart.wide, by="subject") %>% 
-  full_join(eda.wide, by="subject")
+  full_join(eda.wide, by="subject") %>% 
+  inner_join(eyes.wide, by=c("subject", "SPAI", "STAI")) #only keep subjects that have valid eye-tracking data
 
 #separate by first and second half? Rather too much exploration already
 # data.wide.first.half = full_join(questionnaires, ratings.first.wide, by="subject") %>%
@@ -137,7 +137,7 @@ reg.lds.ms.sqr %>% lmer.ci()
 #reg.lds.ms.sqr %>% lmer.ci(twotailed = F)
 
 #ms.diag main effect
-data.wide %>% with(cor.test(Gen_all_lds, Gen_all_ms, alternative="less")) %>% correlation_out()  #apa::cor_apa(r_ci=T)
+data.wide %>% with(cor.test(Gen_all_lds, Gen_all_ms, alternative="less")) %>% apa::cor_apa(r_ci=T) #correlation_out()
 
 print(correl.ms.plot <- data.wide %>% filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
         gather("lds.type", "lds", c("Gen_eyes_lds", "Gen_mn_lds")) %>% 
@@ -169,7 +169,7 @@ correl.ms.spaiInteraction = data.wide %>% filter(subject %in% exclusions.eye.ms 
          ms.diag.type = ifelse(grepl("_eyes_", ms.diag.type), "Eyes", "Mouth/Nose") %>% as.factor()) %>% 
   filter(lds.type == ms.diag.type) %>% 
   mutate(spai.group = ifelse(SPAI > median(SPAI, na.rm=T), "high", "low") %>% factor(levels=c("low", "high")))
-correl.ms.spaiInteraction %>% summarise(rtest = cor.test(lds, sqrt(ms.diag)) %>% correlation_out(returnString=T), 
+correl.ms.spaiInteraction %>% summarise(rtest = cor.test(lds, sqrt(ms.diag)) %>% apa::cor_apa(r_ci=T, print=F), #correlation_out(returnString=T), 
                                         .by=c("spai.group", "ms.diag.type")) %>% arrange(spai.group)
 print(correl.ms.spaiInteraction.plot <- correl.ms.spaiInteraction %>% 
         ggplot(aes(x=sqrt(ms.diag), y=lds, color=ms.diag.type, fill=ms.diag.type, shape=ms.diag.type)) +
