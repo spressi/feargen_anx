@@ -161,34 +161,35 @@ print(correl.ms.plot <- data.wide %>% filter(subject %in% exclusions.eye.ms == F
 )
 
 #ms.diag:ms.diag.type:SPAI
-correl.ms.spaiInteraction = data.wide %>% filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
-  gather("lds.type", "lds", c("Gen_eyes_lds", "Gen_mn_lds")) %>% 
-  gather("ms.diag.type", "ms.diag", c("Gen_eyes_ms", "Gen_mn_ms")) %>%
-  select(subject:SPAI, lds.type:ms.diag) %>% 
-  mutate(lds.type = ifelse(grepl("_eyes_", lds.type), "Eyes", "Mouth/Nose") %>% as.factor(),
-         ms.diag.type = ifelse(grepl("_eyes_", ms.diag.type), "Eyes", "Mouth/Nose") %>% as.factor()) %>% 
-  filter(lds.type == ms.diag.type) %>% 
-  mutate(spai.group = ifelse(SPAI > median(SPAI, na.rm=T), "high", "low") %>% factor(levels=c("low", "high")))
-correl.ms.spaiInteraction %>% summarise(rtest = cor.test(lds, sqrt(ms.diag)) %>% apa::cor_apa(r_ci=T, print=F), #correlation_out(returnString=T), 
-                                        .by=c("spai.group", "ms.diag.type")) %>% arrange(spai.group)
-print(correl.ms.spaiInteraction.plot <- correl.ms.spaiInteraction %>% 
-        ggplot(aes(x=sqrt(ms.diag), y=lds, color=ms.diag.type, fill=ms.diag.type, shape=ms.diag.type)) +
-        facet_wrap(vars(spai.group), scales="free_x", labeller = labeller(spai.group = c(low = "Low Social Anxiety", high = "High Social Anxiety"))) + #labeller = "label_both") +
-        #facet_grid(rows=vars(ms.diag.type), cols=vars(spai.group), scales="free_x", labeller = "label_both") +
-        geom_smooth(method="lm", size=1.5, alpha = .2) +
-        #stat_smooth(method="lm", size=1.5, alpha = .2, fullrange = T) +
-        geom_point(size=4, alpha=.8) + 
-        ylab("Linear Deviation Score") + xlab(expression("Time to Diagnostic ROI (" * sqrt(ms) * ")")) + labs(color="Diagnostic", fill="Diagnostic", shape="Diagnostic") +
-        scale_shape_manual(values=c(16, 15)) +
-        myGgTheme
-)
-#Expected negative correlation between latency & LDS stems from
-#diagnostic eyes       for high anxious subjects
-#diagnostic mouth/nose for low  anxious subjects
+# correl.ms.spaiInteraction = data.wide %>% filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
+#   gather("lds.type", "lds", c("Gen_eyes_lds", "Gen_mn_lds")) %>% 
+#   gather("ms.diag.type", "ms.diag", c("Gen_eyes_ms", "Gen_mn_ms")) %>%
+#   select(subject:SPAI, lds.type:ms.diag) %>% 
+#   mutate(lds.type = ifelse(grepl("_eyes_", lds.type), "Eyes", "Mouth/Nose") %>% as.factor(),
+#          ms.diag.type = ifelse(grepl("_eyes_", ms.diag.type), "Eyes", "Mouth/Nose") %>% as.factor()) %>% 
+#   filter(lds.type == ms.diag.type) %>% 
+#   mutate(spai.group = ifelse(SPAI > median(SPAI, na.rm=T), "high", "low") %>% factor(levels=c("low", "high")))
+# correl.ms.spaiInteraction %>% summarise(rtest = cor.test(lds, sqrt(ms.diag)) %>% apa::cor_apa(r_ci=T, print=F), #correlation_out(returnString=T), 
+#                                         .by=c("spai.group", "ms.diag.type")) %>% arrange(spai.group)
+# print(correl.ms.spaiInteraction.plot <- correl.ms.spaiInteraction %>% 
+#         ggplot(aes(x=sqrt(ms.diag), y=lds, color=ms.diag.type, fill=ms.diag.type, shape=ms.diag.type)) +
+#         facet_wrap(vars(spai.group), scales="free_x", labeller = labeller(spai.group = c(low = "Low Social Anxiety", high = "High Social Anxiety"))) + #labeller = "label_both") +
+#         #facet_grid(rows=vars(ms.diag.type), cols=vars(spai.group), scales="free_x", labeller = "label_both") +
+#         geom_smooth(method="lm", size=1.5, alpha = .2) +
+#         #stat_smooth(method="lm", size=1.5, alpha = .2, fullrange = T) +
+#         geom_point(size=4, alpha=.8) + 
+#         ylab("Linear Deviation Score") + xlab(expression("Time to Diagnostic ROI (" * sqrt(ms) * ")")) + labs(color="Diagnostic", fill="Diagnostic", shape="Diagnostic") +
+#         scale_shape_manual(values=c(16, 15)) +
+#         myGgTheme
+# )
+# #Expected negative correlation between latency & LDS stems from
+# #diagnostic eyes       for high anxious subjects
+# #diagnostic mouth/nose for low  anxious subjects
+# 
+# {(correl.ms.plot + theme(axis.title.x=element_blank())) / correl.ms.spaiInteraction.plot + 
+#     plot_layout(axis_titles = "collect_x", guides = "collect") + plot_annotation(tag_levels = 'a')} %>% 
+#   ggsave("figures/Figure LDS.png", plot=., scale=1.45, device="png", dpi=300, units="in", width=6.5, height = 6.5 / sqrt(2))
 
-{(correl.ms.plot + theme(axis.title.x=element_blank())) / correl.ms.spaiInteraction.plot + 
-    plot_layout(axis_titles = "collect_x", guides = "collect") + plot_annotation(tag_levels = 'a')} %>% 
-  ggsave("figures/Figure LDS.png", plot=., scale=1.45, device="png", dpi=300, units="in", width=6.5, height = 6.5 / sqrt(2))
 
 #STAI analysis
 reg.lds.ms.sqr.stai = data.wide %>% filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
