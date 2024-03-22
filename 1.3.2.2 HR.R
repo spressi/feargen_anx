@@ -304,15 +304,21 @@ print(heart.spai.plot <- heart.simple.gen.lvl %>% ggplot(aes(x=SPAI, y=HRchange.
 
 #SPAI x threat x diagnostic
 heart.simple.spaiXthreatXdiagnostic = heart.simple.gen %>% group_by(subject, SPAI, STAI, threat, diagnostic) %>% summarise(HRchange.se = se(HRchange, na.rm=T), HRchange.m = mean(HRchange, na.rm=T))
-heart.simple.spaiXthreatXdiagnostic %>% group_by(threat, diagnostic) %>% summarise(rtest = cor.test(HRchange.m, SPAI) %>% correlation_out(returnString=T), r = cor(HRchange.m, SPAI)) %>% arrange(desc(r))
 print(heart.spaiInteraction.plot <- heart.simple.spaiXthreatXdiagnostic %>% ggplot(aes(x=SPAI, y=HRchange.m, color=SPAI, fill=SPAI)) +
-        facet_grid(rows=vars(threat), cols=vars(diagnostic),  labeller = label_both) +
+        #facet_grid(rows=vars(threat), cols=vars(diagnostic),  labeller = label_both) +
+        facet_grid(rows=vars(diagnostic), cols=vars(threat),  labeller = label_both) +
         geom_errorbar(aes(ymin=HRchange.m-HRchange.se*1.96, ymax=HRchange.m+HRchange.se*1.96), width=spai.width) +
         stat_smooth(method="lm", color = "black") +
         #geom_point(size=4, shape=21, color="black") +
         geom_point(size=4) + 
         ylab("Heart Rate Change (bpm)") +
         scale_color_viridis_c() + scale_fill_viridis_c() + myGgTheme + theme(legend.position = "none"))
+heart.simple.spaiXthreatXdiagnostic.r = heart.simple.spaiXthreatXdiagnostic %>% group_by(threat, diagnostic) %>% summarise(rtest = cor.test(HRchange.m, SPAI) %>% apa::cor_apa(r_ci=T, print=F), r = cor(HRchange.m, SPAI)) %>% arrange(desc(r)) %>% 
+  mutate(helper = rtest %>% gsub("\\[", "; ", .) %>% gsub("\\]", "; ", .)) %>% separate_wider_delim(helper, delim="; ", names=c(NA, "CI95.lo", "CI95.hi", NA)) %>% mutate(across(contains("CI"), as.numeric))
+heart.simple.spaiXthreatXdiagnostic.r
+heart.simple.spaiXthreatXdiagnostic.r %>% ggplot(aes(x = threat, y = r, color = diagnostic)) + 
+  facet_wrap(vars(diagnostic)) +
+  geom_hline(yintercept = 0) + geom_errorbar(aes(ymin = CI95.lo, ymax = CI95.hi)) + geom_line() + geom_point() + myGgTheme
 
 
 #hr change acquisition
