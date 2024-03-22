@@ -1164,20 +1164,28 @@ print(eye.main.ms.sqrt <- eye.diagnosticity.ms_sqrt.subj.analysis %>% group_by(d
 #ggsave("plots/Eye Latency (sqrt).png", plot=eye.main.ms.sqrt, scale=1, device="png", dpi=300, units="in", width=1920/300, height = 1080/300)
 
 
-#for descriptive values, back-transform to seconds for interpretability (need to start with ms_sqrt.analysis due to Winsorizing beding slightly different)
-eye.diagnosticity.ms_sqrt.analysis %>% group_by(Diagnosticity) %>% summarise(ms=mean(ms, na.rm=T)^2)
-eye.diagnosticity.ms_sqrt.analysis %>% group_by(ROI) %>% summarise(ms=mean(ms, na.rm=T)^2)
+#for descriptive values, back-transform to seconds for interpretability (need to start with ms_sqrt.analysis due to Winsorizing being slightly different)
+#use untransformed descriptive values instead!
+# eye.diagnosticity.ms_sqrt.analysis %>% group_by(Diagnosticity) %>% summarise(ms=mean(ms, na.rm=T)^2)
+# eye.diagnosticity.ms_sqrt.analysis %>% group_by(ROI) %>% summarise(ms=mean(ms, na.rm=T)^2)
+eye.diagnosticity.ms.analysis %>% group_by(Diagnosticity) %>% summarise(ms.m=mean(ms*1000, na.rm=T), ms.sd = sd(ms*1000, na.rm=T))
+eye.diagnosticity.ms.analysis %>% group_by(ROI) %>% summarise(ms.m=mean(ms*1000, na.rm=T), ms.sd = sd(ms*1000, na.rm=T))
+
 
 #ROI x Diagnosticity
-eye.diagnosticity.ms_sqrt.analysis %>% group_by(Diagnosticity, ROI) %>% summarise(ms=mean(ms, na.rm=T)^2)
+# eye.diagnosticity.ms_sqrt.analysis %>% group_by(Diagnosticity, ROI) %>% summarise(ms=mean(ms, na.rm=T)^2)
+eye.diagnosticity.ms.analysis %>% group_by(Diagnosticity, ROI) %>% summarise(ms.m=mean(ms, na.rm=T), ms.sd = sd(ms, na.rm=T))
 #it takes particularly long to look into non-diagnostic mouth/nose but not for non-diagnostic eyes
+eye.diagnosticity.ms.analysis %>% group_by(Diagnosticity, ROI) %>% summarise(ms.m=mean(ms, na.rm=T), ms.sd = sd(ms, na.rm=T)) %>% 
+  select(-ms.sd) %>% pivot_wider(names_from=c(Diagnosticity, ROI), values_from=ms.m) %>% 
+  transmute(`Non-Diagnostic_Mouth/Nose` - Diagnostic_Eyes, `Diagnostic_Mouth/Nose` - `Non-Diagnostic_Eyes`) %>% mutate(across(everything(), function(x) return(x*1000)))
 
 #SPAI main effect
 eye.diagnosticity.ms_sqrt.spai = eye.diagnosticity.ms_sqrt.analysis %>% 
   filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
   group_by(SPAI, subject) %>% summarise(ms = mean(ms, na.rm=T)) %>% 
   left_join(eye.diagnosticity.ms %>% group_by(subject) %>% summarise(ms.se=se(ms/1000, na.rm=T)))
-eye.diagnosticity.ms_sqrt.spai %>% with(cor.test(ms, SPAI, alternative="two.sided")) %>% correlation_out()
+eye.diagnosticity.ms_sqrt.spai %>% with(cor.test(ms, SPAI, alternative="two.sided")) %>% apa::cor_apa(r_ci=T) #%>% correlation_out()
 eye.diagnosticity.ms_sqrt.spai %>% 
   ggplot(aes(y=ms, x=SPAI, color=SPAI)) +
   geom_errorbar(aes(ymin=ms-ms.se*1.96, ymax=ms+ms.se*1.96), width=spai.width) +
