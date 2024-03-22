@@ -307,10 +307,10 @@ for (i in (min(ratings.subject.gen$threat_num)+1):max(ratings.subject.gen$threat
 ratings.gen %>% group_by(diagnostic, subject) %>% summarise(rating = mean(rating, na.rm=T)) %>% summarise(rating.m = mean(rating, na.rm=T), rating.sd = sd(rating, na.rm=T), rating.se = se(rating, na.rm=T)) %>% arrange(desc(rating.m))
 
 # t-tests of diagnostic regions within threat-levels
-# ratings.subject.gen.diagnostic = ratings.gen %>% group_by(subject, SPAI, STAI, threat, threat_num, diagnostic) %>% summarise(rating.m=mean(rating, na.rm=T), rating.se=se(rating, na.rm=T))
+# ratings.subject.gen.diagnosticXthreat = ratings.gen %>% group_by(subject, SPAI, STAI, threat, threat_num, diagnostic) %>% summarise(rating.m=mean(rating, na.rm=T), rating.se=se(rating, na.rm=T))
 # for (i in 1:6) {
 #   cat(paste0("\n\nDiagnostic regions in level: ", i, "\n"))
-#   ratings.subject.gen.diagnostic %>% filter(threat_num == i) %>% 
+#   ratings.subject.gen.diagnosticXthreat %>% filter(threat_num == i) %>% 
 #     t.test(rating.m ~ diagnostic, ., paired=T) %>% apa::t_apa(es_ci=T)
 # }
 
@@ -357,13 +357,13 @@ ratings.subject.gen.lvl %>% ggplot(aes(x=STAI, y=rating.m, color=STAI, fill=STAI
 #diagnostic m/n:  low SPAI <=> less fear generalization (but similar differentiation)
 
 # ANOVA Generalization Phase per Block 
-ratings.subject.gen.diagnostic = ratings.gen %>% 
+ratings.subject.gen.block = ratings.gen %>% 
   mutate(block = as_factor(block)) %>%
   group_by(subject, block, SPAI, SPAI.z, STAI, STAI.z, threat, diagnostic, pairs) %>% 
   summarise(rating.m=mean(rating, na.rm=T), rating.se=se(rating, na.rm=T))
-#ratings.subject.gen.diagnostic %>% filter(rating.m %>% is.na()) #subject 57: all ratings of CS+ NA in block 3
-ratings.subject.gen.diagnostic = ratings.subject.gen.diagnostic %>% filter(subject!=57)
-ez::ezANOVA(data=ratings.subject.gen.diagnostic, 
+#ratings.subject.gen.block %>% filter(rating.m %>% is.na()) #subject 57: all ratings of CS+ NA in block 3
+ratings.subject.gen.block = ratings.subject.gen.block %>% filter(subject!=57)
+ez::ezANOVA(data=ratings.subject.gen.block, 
             dv=.(rating.m), wid=.(subject), 
             within=.(threat, diagnostic, block), 
             #between=.(pairs),
@@ -372,13 +372,13 @@ ez::ezANOVA(data=ratings.subject.gen.diagnostic,
             detailed=T, type=2) %>% apa::anova_apa(force_sph_corr=T)
 
 # Block Main Effect
-ratings.subject.gen.diagnostic %>% 
+ratings.subject.gen.block %>% 
   group_by(block)%>%
   summarise(mean = mean(rating.m),
             sd = sd(rating.m))
 
 # Block x Threat Interaction
-ratings.gen.threat.block <- ratings.subject.gen.diagnostic %>% 
+ratings.gen.threat.block <- ratings.subject.gen.block %>% 
   group_by(block, threat)%>%
   summarise(mean = mean(rating.m),
             se = se(rating.m))
@@ -396,7 +396,7 @@ print(ratings.gradient.plot.blocks <- ratings.gen.threat.block %>%
 #CS+ goes up, all other stimuli down
 
 # Block x Threat x Diagnostic Interaction
-ratings.gen.diagnostic.block <- ratings.subject.gen.diagnostic %>% 
+ratings.gen.diagnostic.block <- ratings.subject.gen.block %>% 
   group_by(block, threat, diagnostic)%>%
   summarise(mean = mean(rating.m),
             se = se(rating.m)) %>%
