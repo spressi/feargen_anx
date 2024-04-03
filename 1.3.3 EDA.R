@@ -528,7 +528,7 @@ for (s in seq(subjects)) {
               geom_point(data=eda.maxima.trial, color="red") + #all maxima
               geom_point(data=eda.minima.trial, color="blue") + #all minima
                 myGgTheme + ggtitle(paste0(subject %>% toCode(), ": CR ", t, "/", nrow(eda.vp))) + xlab("Time (s)")} %>% 
-      ggsave(paste0("plots eda/CS/trials/", filename, " CR ", t, ".png"), ., width=1920, height=1080, units="px")
+      ggsave(paste0("plots eda/CS/trials/", subject %>% toCode(), " CR ", t, ".png"), ., width=1920, height=1080, units="px")
     
     #   print()
     # invisible(readline(prompt="Press [enter] to continue"))
