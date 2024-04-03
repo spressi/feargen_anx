@@ -12,7 +12,7 @@ exclusions.eda = exclusions.eda.num %>% toPhysString()
 
 #output plots to check if everything works as expected
 checkPlots = F #check plot after downsampling, smoothing, trimming?
-checkPlotsTrial = F #check plots for trial scoring of SCRs
+checkPlotsTrial = T #check plots for trial scoring of SCRs
 
 #downsampling
 downsampling = T
@@ -157,6 +157,7 @@ eda.inflection.list = list()
 eda.ucr = tibble(subject = files.phys.included %>% sub("\\..*", "", .), 
                  ucr = 0, valid = 0, lat = 0, rise = 0)
 for (file in files.phys.included) {
+  #file = files.phys.included %>% sample(1) #for testing
   cat("... ", file, "\n", sep="")
   
   filename = file %>% pathToCode()
@@ -341,7 +342,7 @@ for (file in files.phys.included) {
     eda.vp.ucr[t, names(scr.out)] = scr.out
     
     if (checkPlotsTrial) {
-      print(eda %>% filter(time >= eda.vp.ucr$time.start[t], time <= max(itiEnd)/1000 - shockTime/1000 + eda.vp.ucr$time.start[t]) %>% 
+      {eda %>% filter(time >= eda.vp.ucr$time.start[t], time <= max(itiEnd)/1000 - shockTime/1000 + eda.vp.ucr$time.start[t]) %>% 
               ggplot(aes(x=time, y=EDA)) + 
               geom_vline(xintercept = ucrMinWindow + eda.vp.ucr$time.start[t], linetype="dashed", color="blue") + 
               #geom_vline(xintercept = itiEnd/1000 + eda.vp.ucr$time.start[t]) +
@@ -351,9 +352,11 @@ for (file in files.phys.included) {
                          pch=21, size=3) + #selected extreme values first as highlighting circles
               geom_point(data=eda.maxima.trial, color="red") + #all maxima
               geom_point(data=eda.minima.trial, color="blue") + #all minima
-              myGgTheme + ggtitle(paste0(filename, ": UR ", t, "/", nrow(eda.vp.ucr))) + xlab("Time (s)"))
-      
-      invisible(readline(prompt="Press [enter] to continue"))
+              myGgTheme + ggtitle(paste0(filename, ": UR ", t, "/", nrow(eda.vp.ucr))) + xlab("Time (s)")} %>% 
+        ggsave(paste0("plots eda/UCS/trials/", filename, " UR ", t, ".png"), ., width=1920, height=1080, units="px")
+        
+      #   print()
+      # invisible(readline(prompt="Press [enter] to continue"))
     }
   }
   
@@ -514,7 +517,7 @@ for (s in seq(subjects)) {
     eda.vp[t, names(scr.out)] = scr.out
     
     if (checkPlotsTrial && (checkPlotsTrialGenOnly==F || (checkPlotsTrialGenOnly==T && eda.vp$phase[t]=="Gen"))) {
-      print(eda %>% filter(time >= eda.vp$time.start[t], time <= max(itiEnd)/1000 - shockTime/1000 + eda.vp$time.start[t]) %>% 
+      {eda %>% filter(time >= eda.vp$time.start[t], time <= max(itiEnd)/1000 - shockTime/1000 + eda.vp$time.start[t]) %>% 
               ggplot(aes(x=time, y=EDA)) + 
               geom_vline(xintercept = crMinWindow + eda.vp$time.start[t], linetype="dashed", color="blue") + 
               #geom_vline(xintercept = itiEnd/1000 + eda.vp$time.start[t]) +
@@ -524,9 +527,11 @@ for (s in seq(subjects)) {
                          pch=21, size=3) + #selected extreme values first as highlighting circles
               geom_point(data=eda.maxima.trial, color="red") + #all maxima
               geom_point(data=eda.minima.trial, color="blue") + #all minima
-                myGgTheme + ggtitle(paste0(subject %>% toCode(), ": CR ", t, "/", nrow(eda.vp))) + xlab("Time (s)"))
-      
-      invisible(readline(prompt="Press [enter] to continue"))
+                myGgTheme + ggtitle(paste0(subject %>% toCode(), ": CR ", t, "/", nrow(eda.vp))) + xlab("Time (s)")} %>% 
+      ggsave(paste0("plots eda/CS/trials/", filename, " CR ", t, ".png"), ., width=1920, height=1080, units="px")
+    
+    #   print()
+    # invisible(readline(prompt="Press [enter] to continue"))
     }
   }
   
