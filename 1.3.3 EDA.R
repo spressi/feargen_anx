@@ -584,7 +584,8 @@ eda.df = edas.df.list %>% bind_rows(.id="subject") %>% filter(subject %in% {eda.
          pairs = {pair %in% 2:3} %>% ifelse(2, 1) %>% as.factor(),
          ln_cr = log(SCR + 1)) %>% select(subject, everything())
 rm(edas.df.list, edas.list)
-#saveRDS(eda.df, "eda.rds" %>% paste0(path.rds, .))
+#all(eda.df == read_rds("eda.rds" %>% paste0(path.rds, .)), na.rm=T) #check equivalence of processing
+#eda.df %>% write_rds("eda.rds" %>% paste0(path.rds, .))
 
 # eda.df = edas.df.list[[subjects[1]]] %>% select(-EDA)
 # for (i in 2:length(subjects)) eda.df = edas.df.list[[subjects[i]]] %>% select(-EDA) %>% bind_rows(eda.df, .)
@@ -750,4 +751,5 @@ eda.wide = merge(eda.gradients %>% ungroup() %>% mutate(subject = as.numeric(sub
                  eda.ucr %>% filter(include) %>% transmute(subject = as.numeric(subject), EDA_ln_ucr = ln_ucr), 
                  by="subject", all=T)
 
-#saveRDS(eda.wide, "eda.wide.rds" %>% paste0(path.rds, .))
+#all(eda.wide == read_rds("eda.wide.rds" %>% paste0(path.rds, .)), na.rm=T) #check equivalence of processing
+#eda.wide %>% write_rds("eda.wide.rds" %>% paste0(path.rds, .))
