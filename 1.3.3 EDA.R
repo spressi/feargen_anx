@@ -144,7 +144,7 @@ analysis.border = ifelse(downsampling, sample.rate.new, sample.rate) * 30 #trim 
 }
 
 # Preprocessing -----------------------------------------------------------
-#if (createSclPlots) create.SCL.plots(files.phys, saveToFile=saveSclPlotsToFile)
+if (createSclPlots) create.SCL.plots(files.phys, saveToFile=saveSclPlotsToFile)
 
 #read and tidy data
 files.phys.included = files.phys %>% setdiff(exclusions.eda %>% toPhysFileName())
