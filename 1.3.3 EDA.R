@@ -297,6 +297,7 @@ for (file in files.phys.included) {
     
     #if no minimum found within time range use deflection point as minimum
     if (nrow(eda.minima.trial)==0) { 
+      warning(paste0("No minimum found. Using inflection point for subject ", filename, ", trial ", t))
       eda.minima.trial = eda.inflection %>% filter(time >= start + min(ucrMinWindow),
                                                    time <= start + max(ucrMinWindow))
       eda.maxima.trial = eda.maxima %>% filter(time > suppressWarnings(min(eda.minima.trial$time))) %>% 
@@ -468,6 +469,7 @@ for (s in seq(subjects)) {
     
     #if no minimum found within time range use deflection point as minimum
     if (nrow(eda.minima.trial)==0) { 
+      warning(paste0("No minimum found. Using inflection point for subject ", filename, ", trial ", trial))
       eda.minima.trial = eda.inflection %>% filter(time >= start + min(crMinWindow),
                                                    time <= start + max(crMinWindow))
       eda.maxima.trial = eda.maxima %>% filter(time > suppressWarnings(min(eda.minima.trial$time))) %>% 
