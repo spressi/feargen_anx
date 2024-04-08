@@ -412,13 +412,17 @@ for (file in files.phys.included) {
 }
 rm(eda, eda.vp)
 
-
-# Exclusions: UCS non-responder -------------------------------------------
 eda.ucr = eda.ucr %>% mutate(subject = subject %>% gsub("vp", "", ., fixed=T) %>% as.integer(),
                              include = ucr > ucrMeanAmp & valid > ucrMeanValid, 
-                             ln_ucr = log(ucr + 1)) %>% 
-  #mutate(include = ifelse(subject %in% c(4, 28), F, include)) %>% #discard manually according to UCS plot
-  filter(subject %in% exclusions.eda.num == FALSE) #discard a priori exclusions
+                             ln_ucr = log(ucr + 1))
+#all(eda.ucr == read_rds("eda.ucr.rds" %>% paste0(path.rds, .)), na.rm=T) #check equivalence of processing
+#eda.ucr %>% write_rds("eda.ucr.rds" %>% paste0(path.rds, .))
+
+
+# Exclusions: UCS non-responder -------------------------------------------
+#eda.ucr = read_rds("eda.ucr.rds" %>% paste0(path.rds, .))
+#eda.ucr = eda.ucr %>% mutate(include = ifelse(subject %in% c(4, 28), F, include)) #discard manually according to UCS plot
+
 sum(eda.ucr$include == F) %>% paste0(" subjects excluded (", round(100 - mean(eda.ucr$include)*100, digits = 2), "%)")
 #eda.ucr %>% filter(include==FALSE) %>% arrange(desc(valid))
 
@@ -435,8 +439,9 @@ with(eda.ucr, hist(ucr, breaks=seq(0, ceiling(max(ucr)), by=ucrMeanAmp), main="S
 
 
 # Quantify CRs ------------------------------------------------------------
-#subjects = edas.df.list %>% names() %>% ifelse(. %in% exclusions.eda, NA, .) %>% na.omit()
-subjects = eda.ucr %>% filter(include) %>% .$subject
+#eda.ucr = read_rds("eda.ucr.rds" %>% paste0(path.rds, .))
+subjects = eda.ucr %>% .$subject #no exclusions by UCR
+#subjects = eda.ucr %>% filter(include) %>% .$subject #with exclusions by UCR
 for (s in seq(subjects)) {
   subject = subjects[s]
   cat("... ", subject, "\n", sep="")
@@ -597,6 +602,7 @@ rm(edas.df.list, edas.list)
 #                            ln_cr = log(CR + 1)) %>% select(subject, everything())
 
 # Inference Tests ---------------------------------------------------------
+#eda.ucr = read_rds("eda.ucr.rds" %>% paste0(path.rds, .))
 #eda.df = readRDS("eda.rds" %>% paste0(path.rds, .))
 eda.df = eda.df %>% filter(subject %in% {eda.ucr %>% filter(include) %>% .$subject})
 eda.df = eda.df %>% filter(shock==F, shockPrior==F)
