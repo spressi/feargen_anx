@@ -3,9 +3,8 @@ if(!require(tidyverse)) install.packages("tidyverse"); library(tidyverse)
 
 requirePackage("signal", load=F)
 
-exclusions.eda.num = c(exclusions) %>% #exclusion by visual inspection is obsolete by ucr scoring
-  c() %>% 
-  sort()
+exclusions.eda.num = c(exclusions) %>% 
+  c() #exclusion by visual inspection is obsolete by ucr scoring
 exclusions.eda = exclusions.eda.num %>% toPhysString()
 
 #ratings = readRDS("ratings.rds" %>% paste0(path.rds, .))
