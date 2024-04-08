@@ -235,7 +235,7 @@ for (file in files.phys.included) {
   
   #one overview table for each subject with one row per trial
   eda.vp = eda %>% filter(Trigger != 0) %>% select(-EDA) %>% 
-    mutate(trial = 1:n(), condition = Trigger, threat = condition %% 10, pair = condition %/% 10,
+    mutate(trial = 1:n()+(trials.n-triggers.n), condition = Trigger, threat = condition %% 10, pair = condition %/% 10,
            phase = case_when(trial < preAcqEnd ~ "Hab",
                              trial <    acqEnd ~ "Acq",
                              TRUE ~              "Gen"),
@@ -448,6 +448,7 @@ for (s in seq(subjects)) {
   eda.inflection = eda.inflection.list[[subject %>% toCode()]]
   
   for (t in 1:nrow(eda.vp)) {
+    trial = eda.vp$trial[t]
     start = eda.vp$time.start[t]
     eda.minima.trial = eda.minima %>% filter(time >= start + min(crMinWindow),
                                              time <= start + max(crMinWindow))
@@ -527,8 +528,8 @@ for (s in seq(subjects)) {
                          pch=21, size=3) + #selected extreme values first as highlighting circles
               geom_point(data=eda.maxima.trial, color="red") + #all maxima
               geom_point(data=eda.minima.trial, color="blue") + #all minima
-                myGgTheme + ggtitle(paste0(subject %>% toCode(), ": CR ", t, "/", nrow(eda.vp))) + xlab("Time (s)")} %>% 
-      ggsave(paste0("plots eda/CS/trials/", subject %>% toCode(), " CR ", t, ".png"), ., width=1920, height=1080, units="px")
+                myGgTheme + ggtitle(paste0(subject %>% toCode(), ": CR ", trial, "/", trials.n)) + xlab("Time (s)")} %>% 
+      ggsave(paste0("plots eda/CS/trials/", subject %>% toCode(), " CR ", trial, ".png"), ., width=1920, height=1080, units="px")
     
     #   print()
     # invisible(readline(prompt="Press [enter] to continue"))
