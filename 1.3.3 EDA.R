@@ -582,7 +582,7 @@ for (s in seq(subjects)) {
 rm(eda, eda.vp)
 
 #eda dataframe without time series data
-eda.df = edas.df.list %>% bind_rows(.id="subject") %>% filter(subject %in% {eda.ucr %>% filter(include) %>% .$subject}) %>% 
+eda.df = edas.df.list %>% bind_rows(.id="subject") %>% 
   mutate(diagnostic = {pair %in% c(1, 3)} %>% ifelse("Eyes", "Mouth/Nose") %>% as.factor(),
          pairs = {pair %in% 2:3} %>% ifelse(2, 1) %>% as.factor(),
          ln_cr = log(SCR + 1)) %>% select(subject, everything())
@@ -599,6 +599,7 @@ rm(edas.df.list, edas.list)
 
 # Inference Tests ---------------------------------------------------------
 #eda.df = readRDS("eda.rds" %>% paste0(path.rds, .))
+eda.df = eda.df %>% filter(subject %in% {eda.ucr %>% filter(include) %>% .$subject})
 eda.df = eda.df %>% filter(shock==F, shockPrior==F)
 
 #habituation
