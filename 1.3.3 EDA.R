@@ -586,6 +586,8 @@ for (s in seq(subjects)) {
 rm(eda, eda.vp)
 
 #eda dataframe without time series data
+# eda.df = edas.df.list[[subjects[1]]] %>% select(-EDA)
+# for (i in 2:length(subjects)) eda.df = edas.df.list[[subjects[i]]] %>% select(-EDA) %>% bind_rows(eda.df, .)
 eda.df = edas.df.list %>% bind_rows(.id="subject") %>% 
   mutate(diagnostic = {pair %in% c(1, 3)} %>% ifelse("Eyes", "Mouth/Nose") %>% as.factor(),
          pairs = {pair %in% 2:3} %>% ifelse(2, 1) %>% as.factor(),
@@ -594,18 +596,11 @@ rm(edas.df.list, edas.list)
 #all(eda.df == read_rds("eda.rds" %>% paste0(path.rds, .)), na.rm=T) #check equivalence of processing
 #eda.df %>% write_rds("eda.rds" %>% paste0(path.rds, .))
 
-# eda.df = edas.df.list[[subjects[1]]] %>% select(-EDA)
-# for (i in 2:length(subjects)) eda.df = edas.df.list[[subjects[i]]] %>% select(-EDA) %>% bind_rows(eda.df, .)
-# eda.df = eda.df %>% mutate(subject = subject %>% gsub("vp", "", ., fixed=T) %>% as.integer(),
-#                            diagnostic = {pair %in% c(1, 3)} %>% ifelse("Eyes", "Mouth/Nose") %>% as.factor(),
-#                            pairs = {pair %in% 2:3} %>% ifelse(2, 1) %>% as.factor(),
-#                            ln_cr = log(CR + 1)) %>% select(subject, everything())
 
 # Inference Tests ---------------------------------------------------------
 #eda.ucr = read_rds("eda.ucr.rds" %>% paste0(path.rds, .))
-#eda.df = readRDS("eda.rds" %>% paste0(path.rds, .))
-eda.df = eda.df %>% filter(subject %in% {eda.ucr %>% filter(include) %>% .$subject})
-eda.df = eda.df %>% filter(shock==F, shockPrior==F)
+#eda.df = read_rds("eda.rds" %>% paste0(path.rds, .))
+eda.df = eda.df %>% filter(subject %in% {eda.ucr %>% filter(include) %>% .$subject}) #only analyze US responders
 
 #habituation
 eda.df.hab = eda.df %>% filter(phase == "Hab") %>% group_by(subject, threat) %>% 
@@ -638,45 +633,45 @@ eda.df.acq %>% group_by(threat) %>% summarise(ln_cr.se = se(ln_cr, na.rm=T), ln_
 #generalization
 eda.df.gen = eda.df %>% filter(phase == "Gen", shock == F, shockPrior == F) %>% 
   group_by(subject, threat, diagnostic, pairs) %>% summarise(ln_cr = mean(ln_cr, na.rm=T)) %>% 
-  ungroup() %>% mutate(threat = as.factor(threat)) #don't recode yet! messes up the ggplot
+  ungroup() %>% mutate(threat = as.factor(threat)) %>% #don't recode yet! messes up the ggplot
   #mutate(threat = threat %>% recode(`1` = "CS-", `2` = "GS1", `3` = "GS2", `4` = "GS3", `5` = "GS4", `6` = "CS+"))
-eda.df.gen %>% merge(questionnaires, ., by="subject") %>% 
-  #mutate(SPAI = scale(SPAI), STAI = scale(STAI)) %>% #no effect - done implicitly?
+merge(questionnaires, ., by="subject") %>% tibble()
+
+eda.df.gen %>% #mutate(SPAI = scale(SPAI), STAI = scale(STAI)) %>% #no effect - done implicitly?
   ez::ezANOVA(dv=.(ln_cr), wid=.(subject), 
               within=.(threat, diagnostic), 
               #between=.(pairs),
               between=.(SPAI), observed=SPAI,
               #between=.(STAI), observed=STAI,
               detailed=T, type=2) %>% apa::anova_apa(force_sph_corr=T)
-  #schoRsch::anova_out(print = TRUE, sph.cor = "GG", mau.p = 0.05, etasq = "partial", dfsep = ", ")
 
 #SPAI main effect
-eda.df.gen %>% group_by(subject) %>% summarise(ln_cr.se = se(ln_cr, na.rm=T), ln_cr = mean(ln_cr, na.rm=T)) %>% merge(questionnaires, by="subject") %>% 
-  with(cor.test(ln_cr, SPAI)) %>% correlation_out()
-eda.df.gen %>% group_by(subject) %>% summarise(ln_cr.se = se(ln_cr, na.rm=T), ln_cr = mean(ln_cr, na.rm=T)) %>% merge(questionnaires, by="subject") %>% 
-  ggplot(aes(x=SPAI, y=ln_cr, color=SPAI, fill=SPAI)) +
-  geom_errorbar(aes(ymin=ln_cr-ln_cr.se*1.96, ymax=ln_cr+ln_cr.se*1.96), width=spai.width) +
-  stat_smooth(method="lm", color = "black") +
-  #geom_point(size=4, shape=21, color="black") +
-  geom_point(size=4) + 
-  ylab("ln(1 + SCR)") +
-  scale_color_viridis_c() + myGgTheme + theme(legend.position = "none")
+# eda.df.gen %>% group_by(subject) %>% summarise(ln_cr.se = se(ln_cr, na.rm=T), ln_cr = mean(ln_cr, na.rm=T)) %>% merge(questionnaires, by="subject") %>% 
+#   with(cor.test(ln_cr, SPAI)) %>% correlation_out()
+# eda.df.gen %>% group_by(subject) %>% summarise(ln_cr.se = se(ln_cr, na.rm=T), ln_cr = mean(ln_cr, na.rm=T)) %>% merge(questionnaires, by="subject") %>% 
+#   ggplot(aes(x=SPAI, y=ln_cr, color=SPAI, fill=SPAI)) +
+#   geom_errorbar(aes(ymin=ln_cr-ln_cr.se*1.96, ymax=ln_cr+ln_cr.se*1.96), width=spai.width) +
+#   stat_smooth(method="lm", color = "black") +
+#   #geom_point(size=4, shape=21, color="black") +
+#   geom_point(size=4) + 
+#   ylab("ln(1 + SCR)") +
+#   scale_color_viridis_c() + myGgTheme + theme(legend.position = "none")
 
 #STAI main effect
-eda.df.gen %>% group_by(subject) %>% summarise(ln_cr.se = se(ln_cr, na.rm=T), ln_cr = mean(ln_cr, na.rm=T)) %>% merge(questionnaires, by="subject") %>% 
-  with(cor.test(ln_cr, STAI)) %>% correlation_out()
-eda.df.gen %>% group_by(subject) %>% summarise(ln_cr.se = se(ln_cr, na.rm=T), ln_cr = mean(ln_cr, na.rm=T)) %>% merge(questionnaires, by="subject") %>% 
-  ggplot(aes(x=STAI, y=ln_cr, color=STAI, fill=STAI)) +
-  geom_errorbar(aes(ymin=ln_cr-ln_cr.se*1.96, ymax=ln_cr+ln_cr.se*1.96), width=1) +
-  stat_smooth(method="lm", color = "black") +
-  #geom_point(size=4, shape=21, color="black") +
-  geom_point(size=4) + 
-  ylab("ln(1 + SCR)") +
-  scale_color_viridis_c() + myGgTheme + theme(legend.position = "none")
+# eda.df.gen %>% group_by(subject) %>% summarise(ln_cr.se = se(ln_cr, na.rm=T), ln_cr = mean(ln_cr, na.rm=T)) %>% merge(questionnaires, by="subject") %>% 
+#   with(cor.test(ln_cr, STAI)) %>% correlation_out()
+# eda.df.gen %>% group_by(subject) %>% summarise(ln_cr.se = se(ln_cr, na.rm=T), ln_cr = mean(ln_cr, na.rm=T)) %>% merge(questionnaires, by="subject") %>% 
+#   ggplot(aes(x=STAI, y=ln_cr, color=STAI, fill=STAI)) +
+#   geom_errorbar(aes(ymin=ln_cr-ln_cr.se*1.96, ymax=ln_cr+ln_cr.se*1.96), width=1) +
+#   stat_smooth(method="lm", color = "black") +
+#   #geom_point(size=4, shape=21, color="black") +
+#   geom_point(size=4) + 
+#   ylab("ln(1 + SCR)") +
+#   scale_color_viridis_c() + myGgTheme + theme(legend.position = "none")
 
 #threat main effect
 eda.df.gen.subj = eda.df.gen %>% group_by(threat, subject) %>% summarise(ln_cr.se = se(ln_cr, na.rm=T), ln_cr = mean(ln_cr, na.rm=T))
-eda.df.gen %>% group_by(threat) %>% summarise(ln_cr.se = se(ln_cr, na.rm=T), ln_cr = mean(ln_cr, na.rm=T)) %>% 
+eda.df.gen %>% group_by(threat, subject) %>% summarise(ln_cr = mean(ln_cr, na.rm=T)) %>% summarise(ln_cr.se = se(ln_cr, na.rm=T), ln_cr = mean(ln_cr, na.rm=T)) %>% 
   ggplot(aes(x=threat, y=ln_cr, color=threat, group=NA)) + 
   geom_dotplot(data=eda.df.gen.subj, mapping=aes(group=threat, fill=threat), binaxis="y", alpha=.25, color="black", stackratio=1, stackdir="centerwhole", dotsize=.5) +
   #geom_path(data=eda.df.gen.ga.threat %>% filter(threat %in% c(1, 6)), color = "black", size=1.5) + #generalization line
@@ -705,8 +700,8 @@ for (i in 1:5) { #CS+ vs. rest
     t.test(ln_cr ~ threat, ., paired=T) %>% apa::t_apa(es_ci=T)
 }
 
-for (i in 1:6) { #GS4 vs. rest
-  levels = c(i, 5)
+for (i in 1:6) { #GS3 vs. rest
+  levels = c(i, 4)
   if (min(levels) == max(levels)) next
   cat(paste0("\n\nComparing levels: ", paste(levels, collapse=" vs. "), "\n"))
   eda.df.gen.subj %>% filter(threat %in% levels) %>%
@@ -714,23 +709,34 @@ for (i in 1:6) { #GS4 vs. rest
 }
 
 
-# eda.df.gen %>% group_by(threat, diagnostic) %>% summarise(ln_cr.se = se(ln_cr, na.rm=T), ln_cr = mean(ln_cr, na.rm=T)) %>%
-#   ggplot(aes(x=threat, y=ln_cr, color=diagnostic, group=diagnostic)) +
+#threat * diagnostic
+eda.df.gen %>% group_by(threat, diagnostic, subject) %>% summarise(ln_cr = mean(ln_cr, na.rm=T)) %>% summarise(ln_cr.se = se(ln_cr, na.rm=T), ln_cr = mean(ln_cr, na.rm=T)) %>%
+  ggplot(aes(x=threat, y=ln_cr, color=diagnostic, group=diagnostic)) +
+  geom_point(size=3, position=dodge) + geom_line(size=1.5, , position=dodge) +
+  geom_errorbar(aes(ymin=ln_cr-ln_cr.se*1.96, ymax=ln_cr+ln_cr.se*1.96), position=dodge, width=dodge.width) +
+  #geom_line(data=eda.df.gen, mapping=aes(x=threat, y=ln_cr, group=subject), alpha=.1) + #individual gradients
+  #scale_color_manual(values=colors, guide=guide_legend(reverse=T)) +
+  scale_x_discrete(labels=c("CS-", paste0("GS", 1:4), "CS+")) +
+  ylab("LN(1 + SCR)") + xlab("Threat") + labs(color="Threat") + myGgTheme
+
+# eda.df.gen %>% group_by(threat, diagnostic, pairs) %>% summarise(ln_cr.se = se(ln_cr, na.rm=T), ln_cr = mean(ln_cr, na.rm=T)) %>%
+#   #ggplot(aes(x=threat, y=ln_cr, color=diagnostic, shape=pairs, group=interaction(diagnostic, pairs))) +
+#   ggplot(aes(x=threat, y=ln_cr, color=diagnostic, group=diagnostic)) + facet_wrap(vars(pairs), labeller = "label_both") +
 #   geom_point(size=3, position=dodge) + geom_line(size=1.5, , position=dodge) +
 #   geom_errorbar(aes(ymin=ln_cr-ln_cr.se*1.96, ymax=ln_cr+ln_cr.se*1.96), position=dodge, width=dodge.width) +
 #   #geom_line(data=eda.df.gen, mapping=aes(x=threat, y=ln_cr, group=subject), alpha=.1) + #individual gradients
 #   #scale_color_manual(values=colors, guide=guide_legend(reverse=T)) +
 #   scale_x_discrete(labels=c("CS-", paste0("GS", 1:4), "CS+")) +
 #   ylab("LN(1 + SCR)") + xlab("Threat") + labs(color="Threat") + myGgTheme
-# 
-# eda.df.gen %>% group_by(threat, diagnostic, pairs) %>% summarise(ln_cr.se = se(ln_cr, na.rm=T), ln_cr = mean(ln_cr, na.rm=T)) %>% 
-#   ggplot(aes(x=threat, y=ln_cr, color=diagnostic, shape=pairs, group=interaction(diagnostic, pairs))) + 
-#   geom_point(size=3, position=dodge) + geom_line(size=1.5, , position=dodge) +
-#   geom_errorbar(aes(ymin=ln_cr-ln_cr.se*1.96, ymax=ln_cr+ln_cr.se*1.96), position=dodge, width=dodge.width) +
-#   #geom_line(data=eda.df.gen, mapping=aes(x=threat, y=ln_cr, group=subject), alpha=.1) + #individual gradients
-#   #scale_color_manual(values=colors, guide=guide_legend(reverse=T)) +
-#   scale_x_discrete(labels=c("CS-", paste0("GS", 1:4), "CS+")) +
-#   ylab("LN(1 + SCR)") + xlab("Threat") + labs(color="Threat") + myGgTheme
+
+#SPAI * threat
+eda.df.gen %>% group_by(SPAI, threat, subject) %>% summarise(ln_cr = mean(ln_cr, na.rm=T)) %>% summarise(ln_cr.se = se(ln_cr, na.rm=T), ln_cr = mean(ln_cr, na.rm=T)) %>%
+  #ggplot(aes(x=SPAI, y=ln_cr, color=threat, fill=threat, group=threat)) +
+  ggplot(aes(x=SPAI, y=ln_cr, color=threat, fill=threat, group=threat)) + facet_wrap(vars(threat), labeller="label_both") +
+  geom_point(size=3) + 
+  geom_smooth(method="lm", size=1.5, alpha = .2) +
+  scale_color_manual(values=colors) + scale_fill_manual(values=colors) + myGgTheme
+#no positive slope for GS1 & GS3
 
 
 # Gradient Analysis -------------------------------------------------------
