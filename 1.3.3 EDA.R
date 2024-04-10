@@ -380,9 +380,6 @@ for (file in files.phys.included) {
     )
   
   if (ucrPlots) {
-    path = paste0(path.rds, "plots eda/UCS/")
-    dir.create(path, showWarnings=F)
-    
     unified = eda.vp.ucr %>% mutate(EDA = sample.start %>% lapply(function(start) 
       eda %>% filter(sample >= start,
                      sample <= start + max(itiEnd)/1000*ifelse(downsampling, sample.rate.new, sample.rate)) %>% select(-Trigger))
@@ -394,7 +391,7 @@ for (file in files.phys.included) {
     }
     
     path.ucs = paste0(path.rds, "plots eda/UCS/")
-    if (dir.exists(path.ucs)==F) dir.create(path.ucs, recursive=T)
+    dir.create(path.ucs, recursive=T, showWarnings=F)
     unified$EDA %>% bind_rows() %>% 
       mutate(trial = as.factor(trial)) %>% #filter(time > shockEnd/1000) %>% 
     {ggplot(., aes(x=time, y=EDA, color=trial)) + 
