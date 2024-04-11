@@ -25,6 +25,7 @@ data.wide = full_join(questionnaires, ratings.wide, by="subject") %>%
 # #full_join(eda.wide, by="subject")
 
 #all(data.wide == read_rds("data.wide.rds" %>% paste0(path.rds, .)), na.rm=T) #check equivalence of processing
+#colSums(data.wide != read_rds("data.wide.rds" %>% paste0(path.rds, .)), na.rm=T) %>% bind_rows() %>% pivot_longer(everything()) %>% filter(value!=0)
 #data.wide %>% write_rds("data.wide.rds" %>% paste0(path.rds, .))
 
 
