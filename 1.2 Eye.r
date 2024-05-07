@@ -1248,7 +1248,7 @@ eye.diagnosticity.ms.staiXroi %>%
   scale_color_viridis_c() + myGgTheme + theme(legend.position = "none")
 
 
-# Hypotheses ROI switches ---------------------------------------------------
+# Exploration ROI switches ---------------------------------------------------
 #exclusions.eye.switch = c() #don't exclude but prune subjects?
 exclusions.eye.switch = c() #results without exclusions
 
@@ -1346,7 +1346,7 @@ print(eye.diagnosticity.switch.threat %>% ggplot(aes(x=threat, y=roiSwitch.m, co
 eye.diagnosticity.switch.threat 
 
 
-# Hypotheses Scanpath length ---------------------------------------------------
+# Exploration Scanpath length ---------------------------------------------------
 #exclusions.eye.switch = c() #don't exclude but prune subjects?
 exclusions.eye.scanpath = c() #results without exclusions
 
@@ -1452,7 +1452,7 @@ print(eye.diagnosticity.scanpath.threatxdia %>%
         labs(color='Diagnostic Region', fill = 'Diagnostic Region'))
 
 
-# Exploration -------------------------------------------------------------
+# Exploration Temporal Dynamics ------------------------------------------------
 eye.anova.big = eye.diagnosticity.bins %>% filter(bin <= ratingStart/1000) %>% mutate(bin = as.factor(bin)) %>% 
   ez::ezANOVA(dv=.(relDwell), wid=.(subject), 
               within=.(Diagnosticity, ROI, threat, bin), #within_full=.(trial),
