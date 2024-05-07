@@ -18,17 +18,13 @@ data.wide = full_join(questionnaires, ratings.wide, by="subject") %>%
   full_join(eda.wide, by="subject") %>% 
   inner_join(eyes.wide, by=c("subject", "SPAI", "STAI")) #only keep subjects that have valid eye-tracking data
 
-#separate by first and second half? Rather too much exploration already
-# data.wide.first.half = full_join(questionnaires, ratings.first.wide, by="subject") %>%
-#   full_join(eyes.wide, by= c("subject", "SPAI", "STAI")) %>%
-#   full_join(heart.wide, by="subject") #%>%
-# #full_join(eda.wide, by="subject")
-
 #all(data.wide == read_rds("data.wide.rds" %>% paste0(path.rds, .)), na.rm=T) #check equivalence of processing
+#colSums(data.wide != read_rds("data.wide.rds" %>% paste0(path.rds, .)), na.rm=T) %>% bind_rows() %>% pivot_longer(everything()) %>% filter(value!=0)
 #data.wide %>% write_rds("data.wide.rds" %>% paste0(path.rds, .))
 
 
 # Screening Quality -------------------------------------------------------
+#note: use questionnaires data.frame for as much data as possible. Use data.wide instead for final sample
 questionnaires %>% transmute(recruitment = ifelse(Screening_vorher %>% is.na(), "screening", "other")) %>% 
   count(recruitment) %>% mutate(prop = n / sum(n))
 
@@ -562,7 +558,7 @@ data.wide %>% gather("lds.type", "lds", c("Pup_Gen_eyes_lds", "Pup_Gen_mn_lds"))
   )
 
 
-#Pupil: LDS & Time to diagnostic ROI
+#Pupil: LDS & Square Root of Time to diagnostic ROI
 reg.pup.ms = data.wide %>% gather("lds.type", "lds", c("Pup_Gen_eyes_lds", "Pup_Gen_mn_lds")) %>% 
   gather("ms.diag.type", "ms.diag", c("Gen_eyes_ms", "Gen_mn_ms")) %>%
   select(subject:STAI, lds.type:ms.diag) %>% 
@@ -690,7 +686,7 @@ reg.heart.ms %>% lmer.ci()
 #reg.heart.ms %>% lmer.ci(twotailed = F)
 
 #SPAI x ms.diag (sqrt)
-SDs = -2:2
+SDs = -1:1 #-2:2
 spai.descr = with(questionnaires, data.frame(SPAI=mean(SPAI)+sd(SPAI)*SDs, SPAI.z=SDs))
 reg.heart.ms.spaiSD.predict = spai.descr %>%
   expand.grid.df(data.frame(ms.diag=unique(data.wide$Gen_all_ms %>% na.omit() %>% sqrt())) %>% mutate(ms.diag.z=scale(ms.diag))) %>%
@@ -707,11 +703,11 @@ print(reg.ms.hr.spai.plot <- heart.ms %>% group_by(subject) %>%
         myGgTheme + scale_color_viridis_c()
 )
 
-heart.ms %>% mutate(SPAI.group = ifelse(SPAI > median(SPAI, na.rm=T), "high", "low")) %>% 
-  summarise(cor.test(lds, ms.diag) %>% apa::cor_apa(r_ci=T, print=F), .by=SPAI.group)
-#simple correlations show a less balanced picture because we have way more subjects with low anxiety (skewed distribution)
+heart.ms %>% summarise(.by=subject, ms.diag=mean(ms.diag, na.rm=T), lds=mean(lds, na.rm=T), SPAI=mean(SPAI, na.rm=T)) %>% 
+  mutate(SPAI.group = ifelse(SPAI < median(SPAI, na.rm=T), "low", "high")) %>%
+  #mutate(SPAI.group = SPAI %>% ntile(3)) %>% 
+  summarise(.by=SPAI.group, cor = cor.test(lds, ms.diag) %>% apa::cor_apa(r_ci=T, print=F)) %>% arrange(SPAI.group)
 #for low social anxiety: faster diagnostic dwell <=> MORE fear generalization (LESS heart rate DECELERATION)
-#TODO visualize gradients by median split (cf. scripts of first study after review)
 
 
 #SPAI x ms.diag.type

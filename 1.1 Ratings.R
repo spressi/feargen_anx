@@ -199,6 +199,22 @@ print(ratings.gradient.plot <- ratings.ga.gen %>% ggplot(aes(x=threat_both, y=ra
         myGgTheme)
 #ggsave("plots/Ratings Gradient.png", plot=ratings.gradient.plot, scale=1, device="png", dpi=300, units="in", width=1920/300, height = 1080/300)
 
+ratings.ga.gen.SPAI.subj = ratings.gen %>% 
+  mutate(SPAI = if_else(SPAI < median(SPAI, na.rm=T), "low", "high")) %>% 
+  #mutate(SPAI = SPAI %>% ntile(3) %>% case_match(1 ~ "low", 2 ~ "middle", 3 ~ "high")) %>% 
+  group_by(SPAI, threat, threat_num, threat_both, subject) %>% summarise(rating.se=se(rating, na.rm=T), rating=mean(rating, na.rm=T))
+ratings.ga.gen.SPAI = ratings.ga.gen.SPAI.subj %>% summarise(rating.se=se(rating, na.rm=T), rating=mean(rating, na.rm=T), n=n())
+print(ratings.gradient.SPAI <- ratings.ga.gen.SPAI %>% ggplot(aes(x=threat_both, y=rating, color=SPAI, group=SPAI)) +
+        #geom_dotplot(data=ratings.ga.gen.SPAI.subj %>% filter(SPAI=="low"), mapping=aes(group=interaction(threat, SPAI), fill=SPAI), stackdir="up", binaxis="y", alpha=.25, color="black", stackratio=1, dotsize=.5) +
+        #geom_dotplot(data=ratings.ga.gen.SPAI.subj %>% filter(SPAI=="high"), mapping=aes(group=interaction(threat, SPAI), fill=SPAI), stackdir="down", binaxis="y", alpha=.25, color="black", stackratio=1, dotsize=.5) +
+        geom_line(linewidth=1, position=dodge) + geom_point(size=4.5, position=dodge) + 
+        geom_errorbar(aes(ymin=rating-rating.se*1.96, ymax=rating+rating.se*1.96), size=1.5, position=dodge, width=dodge.width) +
+        scale_color_viridis_d(direction=-1) + scale_fill_viridis_d(direction=-1) +
+        scale_x_discrete(labels=levels(ratings.ga.gen$threat)) +
+        ylab("Threat Rating (1-5)") + xlab("Threat") +
+        myGgTheme)
+#ggsave("plots/Ratings Gradient SPAI.png", plot=ratings.gradient.SPAI, scale=1, device="png", dpi=300, units="px", width=1920, height = 1080)
+
 ratings.ga.gen.STAI.subj = ratings.gen %>% mutate(STAI = if_else(STAI < median(STAI, na.rm=T), "low", "high")) %>% 
   group_by(STAI, threat, threat_num, threat_both, subject) %>% summarise(rating.se=se(rating, na.rm=T), rating=mean(rating, na.rm=T))
 ratings.ga.gen.STAI = ratings.ga.gen.STAI.subj %>% summarise(rating.se=se(rating, na.rm=T), rating=mean(rating, na.rm=T), n=n())
@@ -216,7 +232,8 @@ print(ratings.gradient.STAI <- ratings.ga.gen.STAI %>% ggplot(aes(x=threat_both,
 #Figure Ratings
 #cowplot::plot_grid(ratings.trials.plot, ratings.gradient.plot + theme(legend.position="none"), ncol=1, labels="auto") %>% ggsave("figures/Figure Ratings (old).png", plot=., scale=1, device="png", dpi=300, units="in", width=6.5, height = 6.5 * 2 / sqrt(2))
 #{ratings.trials.plot / ratings.gradient.plot / ratings.gradient.STAI + plot_annotation(tag_levels = 'a')} %>% ggsave("figures/Figure Ratings.png", plot=., scale=1.8, device="png", dpi=300, units="in", width=6.5/2, height = 6.5/2 * 3 / sqrt(2))
-{ratings.trials.plot / ((ratings.gradient.plot + theme(legend.position="none")) + (ratings.gradient.STAI + ylab("")) + plot_layout(widths=c(1.25, 1))) + plot_annotation(tag_levels = 'a')} %>% 
+#{ratings.trials.plot / ((ratings.gradient.plot + theme(legend.position="none")) + (ratings.gradient.STAI + ylab("")) + plot_layout(widths=c(1.25, 1))) + plot_annotation(tag_levels = 'a')} %>% 
+{ratings.trials.plot / ((ratings.gradient.plot + theme(legend.position="none")) + (ratings.gradient.SPAI + ylab("")) + plot_layout(widths=c(1.25, 1))) + plot_annotation(tag_levels = 'a')} %>% 
   ggsave("figures/Figure Ratings.png", plot=., scale=1.45, device="png", dpi=300, units="in", width=6.5, height = 6.5 / sqrt(2))
 
 

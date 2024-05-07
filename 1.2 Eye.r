@@ -977,6 +977,9 @@ eye.diagnosticity %>% filter(subject %in% exclusions.eye.dwell == F) %>% #manual
 eye.diagnosticity %>% filter(subject %in% exclusions.eye.dwell == F) %>% #manual exclusion because of extreme dwell
   group_by(Diagnosticity, subject) %>% summarise(relDwell = mean(relDwell, na.rm=T)) %>% summarise(relDwell.se = se(relDwell, na.rm=T), relDwell = mean(relDwell)) %>% select(relDwell, everything())
 
+#dwell time to ANY ROI
+eye.gen %>% transmute(dwell.ROIs = dwell.m + dwell.non.m) %>% summarise(dwell.ROIs = mean(dwell.ROIs, na.rm=T))
+
 #SPAI x Diagnosticity
 eye.diagnosticity.spaiXdia = eye.diagnosticity.analysis %>% 
   filter(subject %in% exclusions.eye.dwell == F) %>% #manual exclusion because of extreme latency
