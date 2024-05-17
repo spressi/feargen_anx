@@ -360,6 +360,19 @@ heart.anova.big.spai %>% apa::anova_apa(force_sph_corr=T)
 heart.spai.plot
 with(heart.simple.gen.lvl, cor.test(SPAI, HRchange.m)) %>% apa::cor_apa(r_ci=T)
 
+#time main effect
+print(heart.time.plot <- heart.gen %>% group_by(time, subject) %>% summarise(HRchange.se = se(HRchange), HRchange = mean(HRchange)) %>% 
+        summarise(HRchange.se = se(HRchange), HRchange = mean(HRchange)) %>% 
+        mutate(time = time %>% as.character() %>% as.double()) %>% 
+        bind_rows(tibble(time = 0, HRchange = 0, HRchange.se = 0)) %>% 
+        ggplot(aes(x=time, y=HRchange, group=NA)) + 
+        geom_hline(yintercept = 0, linetype="dashed") +
+        geom_ribbon(aes(ymin=HRchange-HRchange.se*1.96, ymax=HRchange+HRchange.se*1.96), color=NA, alpha=.1) +
+        #geom_errorbar(aes(ymin=HRchange-HRchange.se*1.96, ymax=HRchange+HRchange.se*1.96)) +
+        geom_point(size=3) + geom_line() + 
+        ylab(expression(Delta ~ "Heart Rate (bpm)")) + xlab("Trial Time (sec)") + myGgTheme)
+#ggsave("plots/Heart Time Main Effect.png", plot=heart.time.plot, scale=1, device="png", dpi=300, units="in", width=1920/300, height = 1080/300)
+
 #SPAI x time
 requirePackage("lme4")
 requirePackage("lmerTest")
@@ -387,6 +400,9 @@ print(heart.spaiXtime.plot <- heart.gen %>%
         geom_line(data=heart.spaiSD.predict, mapping=aes(group=SPAI), size=4) +
         ylab("Heart Rate Change (bpm)") + xlab("Trial Time (sec)") +
         scale_color_viridis_c() + myGgTheme)
+#SPAI median split
+heart.trialtime.spai.plot
+
 
 #threat 
 heart.gradient.plot
@@ -441,6 +457,29 @@ print(heart.spai.all.plot <- heart.spaiSD.all.predict %>%
         facet_grid(rows=vars(threat), cols=vars(diagnostic), labeller = label_both) +
         ylab("Heart Rate Change (bpm)") + xlab("Trial Time (sec)") +
         scale_color_viridis_c() + myGgTheme)
+
+#SPAI median split instead
+heart.ga.gen.time.spaiX4 = heart %>% filter(phase == "Gen") %>% 
+  mutate(spai.split = ifelse(SPAI.z >= 0, "HSA", "LSA")) %>%
+  summarise(.by=c(threat, time, spai.split, diagnostic),
+            HRchange.se = se(HRchange, na.rm=T), HRchange = mean(HRchange, na.rm=T)) %>% 
+  mutate(time = time %>% as.character() %>% as.numeric())
+heart.ga.gen.time.spaiX4 = heart.ga.gen.time.spaiX4 %>% 
+  full_join(tibble(time=0, HRchange=0, HRchange.se=0) %>% crossing(heart.ga.gen.time.spaiX4 %>% select(threat, spai.split, diagnostic)), .) %>% #add origin
+  mutate(spai.split = spai.split %>% factor(levels=c("LSA", "HSA"))) #low anxiety first instead of alphabetical order
+print(heart.trialtime.spai.plotX4 <- heart.ga.gen.time.spaiX4 %>% ggplot(aes(x=time, y=HRchange, color=threat, group=threat, shape=threat)) + 
+        facet_grid(cols = vars(spai.split), rows = vars(diagnostic), labeller = labeller(spai.split = c(LSA = "Low Social Anxiety", HSA = "High Social Anxiety"), diagnostic = c(eyes = "Diagnostic Eyes", `mouth/nose` = "Diagnostic Mouth/Nose"))) +
+        geom_hline(yintercept = 0, linetype="dashed") +
+        geom_ribbon(aes(ymin=HRchange-HRchange.se*1.96, ymax=HRchange+HRchange.se*1.96, fill=threat), color=NA, alpha=.1) +
+        #geom_errorbar(aes(ymin=HRchange-HRchange.se*1.96, ymax=HRchange+HRchange.se*1.96)) +
+        geom_point(size=3) + geom_line() + 
+        scale_color_manual(values=colors, labels=c("CS-", paste0("GS", 1:4), "CS+")) + scale_shape_discrete(labels=c("CS-", paste0("GS", 1:4), "CS+")) + scale_fill_manual(values=colors, labels=c("CS-", paste0("GS", 1:4), "CS+")) + 
+        ylab(expression(Delta ~ "Heart Rate (bpm)")) + xlab("Trial Time (sec)") + labs(color="Threat", shape="Threat", fill="Threat") + myGgTheme)
+#ggsave("plots/Heart Time SPAI 4-way.png", plot=heart.trialtime.spai.plotX4, scale=1.45, device="png", dpi=300, units="in", width=1920/300, height = 1080/300)
+
+
+#{(heart.time.plot + xlab("")) / heart.trialtime.spai.plotX4 + plot_annotation(tag_levels = 'a')} %>% ggsave("figures/Figure Heart Supp.png", plot=., device="png", scale=1.45, dpi=300, width=6.5, height = 6.5 / sqrt(2) / 2, units="in")
+
 
 # Gradient Analysis -----------------------------------------------------------
 individualPlots = F

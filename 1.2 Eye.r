@@ -987,13 +987,19 @@ eye.diagnosticity.spaiXdia = eye.diagnosticity.analysis %>%
   left_join(eye.diagnosticity %>% group_by(subject, Diagnosticity) %>% summarise(relDwell.se=se(relDwell*100, na.rm=T)))
 eye.diagnosticity.spaiXdia %>% group_by(Diagnosticity) %>% 
   summarise(r = cor.test(relDwell, SPAI, alternative="two.sided") %>% apa::cor_apa(r_ci=T, print=F))
-eye.diagnosticity.spaiXdia %>% 
-  ggplot(aes(y=relDwell, x=SPAI, color=SPAI)) +
-  facet_wrap(vars(Diagnosticity)) +
-  geom_errorbar(aes(ymin=relDwell-relDwell.se*1.96, ymax=relDwell+relDwell.se*1.96), width=spai.width) +
-  geom_smooth(method="lm", color="black") + geom_point(size=4) +
-  ylab("Average Dwell (%)") +
-  scale_color_viridis_c() + myGgTheme + theme(legend.position = "none")
+print(eye.dwell.spaiXdia <- eye.diagnosticity.spaiXdia %>% 
+        ggplot(aes(y=relDwell, x=SPAI, color=SPAI)) +
+        facet_wrap(vars(Diagnosticity)) +
+        geom_errorbar(aes(ymin=relDwell-relDwell.se*1.96, ymax=relDwell+relDwell.se*1.96), width=spai.width) +
+        geom_smooth(method="lm", color="black") + geom_point(size=4) +
+        ylab("Relative Dwell Time (%)") +
+        scale_color_viridis_c() + myGgTheme + theme(legend.position = "none"))
+
+#Figure Eye Dwell Supplement
+{(eye.main / wrap_elements(full=eye.dwell.spaiXdia)) + plot_annotation(tag_levels = 'a') + plot_layout(heights=c(1, 1.25))} %>%
+  ggsave("figures/Figure Eye Dwell Supp.png", plot=., scale=1.45, device="png", dpi=300, units="in", width=6.5, height = 6.5) #alternative height: 6.5 / sqrt(2)
+#{(free(eye.main.ms.sqrt) / free(eye.ms.spai + facet_wrap(vars(Diagnosticity), ncol=1))) + plot_annotation(tag_levels = 'a')} %>% ggsave("figures/Figure Eye.png", plot=., scale=1.45, device="png", dpi=300, units="in", width=6.5/2, height = 6.5/2*3 / sqrt(2))
+
 
 #STAI x Diagnosticity
 eye.diagnosticity.staiXdia = eye.diagnosticity.analysis %>% 
@@ -1007,7 +1013,7 @@ eye.diagnosticity.staiXdia %>%
   facet_wrap(vars(Diagnosticity)) +
   geom_errorbar(aes(ymin=relDwell-relDwell.se*1.96, ymax=relDwell+relDwell.se*1.96)) +
   geom_smooth(method="lm", color="black") + geom_point(size=4) +
-  ylab("Average Dwell (%)") +
+  ylab("Relative Dwell Time (%)") +
   scale_color_viridis_c() + myGgTheme + theme(legend.position = "none")
 
 #SPAI vs. STAI
@@ -1276,13 +1282,13 @@ eye.gen.switch.spai = eye.gen %>%
   filter(subject %in% exclusions.eye.switch == F) %>% #manual exclusion because of extreme values
   group_by(SPAI, subject) %>% summarise(switches.se = roiSwitch.se, roiSwitch.m = roiSwitch.m)
 eye.gen %>% filter(subject %in% exclusions.eye.switch == F) %>% with(cor.test(roiSwitch.m, SPAI, alternative="greater")) %>% correlation_out()
-eye.gen.switch.spai %>% filter(subject %in% exclusions.eye.switch == F) %>% 
+print(eye.gen.switch.spai.plot <- eye.gen.switch.spai %>% filter(subject %in% exclusions.eye.switch == F) %>% 
   ggplot(aes(y=roiSwitch.m, x=SPAI, color=SPAI)) +
+  geom_smooth(method="lm", color="black") + 
   geom_point(size=4) +
   geom_errorbar(aes(ymin=roiSwitch.m-switches.se*1.96, ymax=roiSwitch.m+switches.se*1.96), width=spai.width) +
-  geom_smooth(method="lm", color="black") + 
   ylab("Mean number of Switches") +
-  scale_color_viridis_c() + myGgTheme + theme(legend.position = "none")
+  scale_color_viridis_c() + myGgTheme + theme(legend.position = "none"))
 
 #STAI x diagnostic
 eye.gen.switch.stai = eye.gen.diagnostic %>% 
@@ -1323,7 +1329,7 @@ eye.diagnosticity.switch.subj.threat = eye.diagnosticity %>%
   filter(subject %in% exclusions.eye.switch == F) %>% #manual exclusion because of extreme latency
   group_by(subject, threat) %>% summarise(switches.se = se(roiSwitch, na.rm=T), roiSwitch.m = mean(roiSwitch, na.rm=T))
 for (i in (min(as.numeric(eye.diagnosticity.switch.subj.threat$threat))+1):max(as.numeric(eye.diagnosticity.switch.subj.threat$threat))) {
-  levels = c(i-1, i)
+  levels = c(1, i)
   cat(paste0("\n\nComparing levels: ", paste(levels, collapse=" vs. "), "\n"))
   eye.diagnosticity.switch.subj.threat %>% filter(threat %in% levels) %>% 
     t.test(roiSwitch.m ~ threat, ., paired=T) %>% apa::t_apa(es_ci=T)
@@ -1331,7 +1337,7 @@ for (i in (min(as.numeric(eye.diagnosticity.switch.subj.threat$threat))+1):max(a
 eye.diagnosticity.switch.threat <- eye.diagnosticity %>% 
   filter(subject %in% exclusions.eye.switch == F) %>% #manual exclusion because of extreme latency
   group_by(threat) %>% summarise(switches.se = se(roiSwitch, na.rm=T), roiSwitch.m = mean(roiSwitch, na.rm=T))
-print(eye.diagnosticity.switch.threat %>% ggplot(aes(x=threat, y=roiSwitch.m, color=threat, group=NA)) + 
+print(eye.diagnosticity.switch.threat.plot <- eye.diagnosticity.switch.threat %>% ggplot(aes(x=threat, y=roiSwitch.m, color=threat, group=NA)) + 
         #geom_dotplot(data=eye.diagnosticity.threat.subject, mapping=aes(group=threat, fill=threat), binaxis="y", alpha=.25, color="black", stackratio=1, stackdir="centerwhole", dotsize=.5) +
         #geom_path(data=heart.ga.gen %>% filter(threat %in% c(1, 6)), aes(group=NA), color = "black", size=1.5) + #generalization line
         geom_errorbar(aes(ymin=roiSwitch.m-switches.se*1.96, ymax=roiSwitch.m+switches.se*1.96), size=1.5) +
@@ -1385,11 +1391,12 @@ eye.gen.scanpath.subj.spai %>%
 eye.diagnosticity.scanpath.dia <- eye.diagnosticity %>% 
   filter(subject %in% exclusions.eye.scanpath == F) %>% #manual exclusion because of extreme latency
   group_by(diagnostic) %>% summarise(scanPath.se = se(scanPath, na.rm=T), scanPath.m = mean(scanPath, na.rm=T))
+eye.diagnosticity.scanpath.dia
 eye.diagnosticity.scanpath.subj.dia = eye.diagnosticity %>% 
   filter(subject %in% exclusions.eye.scanpath == F) %>% #manual exclusion because of extreme latency
   group_by(subject,SPAI,diagnostic) %>% summarise(scanPath.se = se(scanPath, na.rm=T), scanPath.m = mean(scanPath, na.rm=T))
-eye.diagnosticity.scanpath.subj.dia  %>% t.test(scanPath.m ~ diagnostic, ., paired=T) %>% apa::t_apa(es_ci=T)
-# eye.diagnosticity.scanpath %>%
+eye.diagnosticity.scanpath.subj.dia %>% t.test(scanPath.m ~ diagnostic, ., paired=T) %>% apa::t_apa(es_ci=T)
+# eye.diagnosticity.scanpath.dia %>%
 #   ggplot(aes(y=scanPath.m, x=SPAI, color= as.factor(diagnostic), fill=as.factor(diagnostic), group=diagnostic)) +
 #   #facet_wrap(vars(diagnostic)) +
 #   #geom_errorbar(aes(ymin=scanPath.m-scanPath.se*1.96, ymax=scanPath.m+scanPath.se*1.96), width=.05) +
@@ -1406,7 +1413,8 @@ eye.diagnosticity.scanpath.subj.threat = eye.diagnosticity %>%
   filter(subject %in% exclusions.eye.scanpath == F) %>% #manual exclusion because of extreme latency
   group_by(subject, threat) %>% summarise(scanPath.se = se(scanPath, na.rm=T), scanPath.m = mean(scanPath, na.rm=T))
 for (i in (min(as.numeric(eye.diagnosticity.scanpath.subj.threat$threat))+1):max(as.numeric(eye.diagnosticity.scanpath.subj.threat$threat))) {
-  levels = c(i-1, i)
+  #levels = c(1, i)
+  levels = c(6, i-1)
   cat(paste0("\n\nComparing levels: ", paste(levels, collapse=" vs. "), "\n"))
   eye.diagnosticity.scanpath.subj.threat %>% filter(threat %in% levels) %>% 
     t.test(scanPath.m ~ threat, ., paired=T) %>% apa::t_apa(es_ci=T)
@@ -1447,7 +1455,7 @@ eye.diagnosticity.scanpath.threat.mn <- eye.diagnosticity %>%
 print(eye.diagnosticity.scanpath.threatxdia %>%
         ggplot(aes(y=scanPath.m, x=threat, color= as.factor(diagnostic), fill=as.factor(diagnostic), group=diagnostic)) +
         scale_color_discrete(labels=c("Eyes", "Mouth/Nose")) +
-        geom_point(size=4, alpha = 0.3) +
+        #geom_point(size=4, alpha = 0.3) +
         geom_errorbar(data = eye.diagnosticity.scanpath.threat.eyes, aes(ymin=scanPath.m-scanPath.se*1.96, ymax=scanPath.m+scanPath.se*1.96), size=1.5) +
         geom_errorbar(data = eye.diagnosticity.scanpath.threat.mn, aes(ymin=scanPath.m-scanPath.se*1.96, ymax=scanPath.m+scanPath.se*1.96), size=1.5) +
         ylab("Mean Scanpath Length") +

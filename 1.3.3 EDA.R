@@ -668,20 +668,22 @@ eda.df.gen %>% #mutate(SPAI = scale(SPAI), STAI = scale(STAI)) %>% #no effect - 
 
 #threat main effect
 eda.df.gen.subj = eda.df.gen %>% group_by(threat, subject) %>% summarise(ln_cr.se = se(ln_cr, na.rm=T), ln_cr = mean(ln_cr, na.rm=T))
-eda.df.gen %>% group_by(threat, subject) %>% summarise(ln_cr = mean(ln_cr, na.rm=T)) %>% summarise(ln_cr.se = se(ln_cr, na.rm=T), ln_cr = mean(ln_cr, na.rm=T)) %>% 
-  ggplot(aes(x=threat, y=ln_cr, color=threat, group=NA)) + 
-  geom_dotplot(data=eda.df.gen.subj, mapping=aes(group=threat, fill=threat), binaxis="y", alpha=.25, color="black", stackratio=1, stackdir="centerwhole", dotsize=.5) +
-  #geom_path(data=eda.df.gen.ga.threat %>% filter(threat %in% c(1, 6)), color = "black", size=1.5) + #generalization line
-  geom_errorbar(aes(ymin=ln_cr-ln_cr.se*1.96, ymax=ln_cr+ln_cr.se*1.96), size=1.5) +
-  geom_line(size=1) + 
-  geom_point(size=4.5) +
-  #geom_line(data=eda.df.gen, mapping=aes(x=threat, y=ln_cr, group=subject), alpha=.1) + #individual gradients
-  scale_color_manual(values=colors, guide=guide_legend(reverse=T)) +
-  #scale_fill_manual(values=colors, guide=guide_legend(reverse=T)) +
-  scale_fill_manual(values=rep("grey", 6), guide=guide_legend(reverse=T)) +
-  scale_x_discrete(labels=c("CS-", paste0("GS", 1:4), "CS+")) +
-  ylab("LN(1 + SCR)") + xlab("Threat") + labs(color="Threat", fill="Threat") + myGgTheme +
-  theme(legend.position = "none")
+print(scr.gradient.plot <- eda.df.gen %>% group_by(threat, subject) %>% summarise(ln_cr = mean(ln_cr, na.rm=T)) %>% summarise(ln_cr.se = se(ln_cr, na.rm=T), ln_cr = mean(ln_cr, na.rm=T)) %>% 
+        ggplot(aes(x=threat, y=ln_cr, color=threat, group=NA)) + 
+        geom_dotplot(data=eda.df.gen.subj, mapping=aes(group=threat, fill=threat), binaxis="y", alpha=.25, color="black", stackratio=1, stackdir="centerwhole", dotsize=.5) +
+        #geom_path(data=eda.df.gen.ga.threat %>% filter(threat %in% c(1, 6)), color = "black", size=1.5) + #generalization line
+        geom_errorbar(aes(ymin=ln_cr-ln_cr.se*1.96, ymax=ln_cr+ln_cr.se*1.96), size=1.5) +
+        geom_line(size=1) + 
+        geom_point(size=4.5) +
+        #geom_line(data=eda.df.gen, mapping=aes(x=threat, y=ln_cr, group=subject), alpha=.1) + #individual gradients
+        scale_color_manual(values=colors, guide=guide_legend(reverse=T)) +
+        #scale_fill_manual(values=colors, guide=guide_legend(reverse=T)) +
+        scale_fill_manual(values=rep("grey", 6), guide=guide_legend(reverse=T)) +
+        scale_x_discrete(labels=c("CS-", paste0("GS", 1:4), "CS+")) +
+        ylab("LN(1 + SCR)") + xlab("Threat") + labs(color="Threat", fill="Threat") + myGgTheme +
+        theme(legend.position = "none"))
+#ggsave("plots/SCR Gradient.png", plot=scr.gradient.plot, device="png", dpi=300, width=1920/300, height=1080/300, units="in")
+
 
 for (i in 2:6) { #CS- vs. rest
   levels = c(1, i)
