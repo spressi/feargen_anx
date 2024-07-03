@@ -1103,7 +1103,7 @@ eye.diagnosticity.ms.spaiXdia %>%
   geom_errorbar(aes(ymin=ms-ms.se*1.96, ymax=ms+ms.se*1.96), width=.05) +
   geom_smooth(method="lm", color="black") + geom_point(size=4) +
   ylab("Average Time to ROIs (sec)") +
-  scale_color_viridis_c() + myGgTheme + theme(legend.position = "none")
+  scale_color_viridis_c() + myGgTheme + theme(legend.position = "none") 
 
 #STAI x Diagnosticity
 eye.diagnosticity.ms.staiXdia = eye.diagnosticity.ms.analysis %>% 
@@ -1209,12 +1209,18 @@ eye.diagnosticity.ms.spaiXdia = eye.diagnosticity.ms_sqrt.analysis %>%
   left_join(eye.diagnosticity.ms %>% group_by(subject, Diagnosticity) %>% summarise(ms.se=se(ms/1000, na.rm=T)))
 eye.diagnosticity.ms.spaiXdia %>% group_by(Diagnosticity) %>% 
   summarise(r = cor.test(ms, SPAI, alternative="two.sided") %>% apa::cor_apa(r_ci=T, print=F))
+correls <- data.frame(
+  Diagnosticity = c("Diagnostic", "Non-Diagnostic")
+  #rtest = c("r = -.13","r = -.30*")
+)
+correls$rtest <- c(bquote(italic(r) == -0.13), bquote(italic(r) == -0.30 * "*"))
 print(eye.ms.spai <- eye.diagnosticity.ms.spaiXdia %>% 
   ggplot(aes(y=ms, x=SPAI, color=SPAI)) +
   facet_wrap(vars(Diagnosticity)) +
   geom_errorbar(aes(ymin=ms-ms.se*1.96, ymax=ms+ms.se*1.96), width=spai.width) +
   geom_smooth(method="lm", color="black") + geom_point(size=4) +
   ylab(expression("Latency to ROI (" * sqrt(sec) * ")")) +
+  geom_text(data = correls, aes(x = 1, y = 1.7, label = rtest, color = NULL,group= NULL), parse = TRUE)+
   scale_color_viridis_c() + myGgTheme + theme(legend.position = "none"))
 #ggsave("plots/Eye Latency SPAI.png", plot=eye.ms.spai, scale=1, device="png", dpi=300, units="in", width=1920/300, height = 1080/300)
 
