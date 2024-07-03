@@ -261,6 +261,7 @@ questionnaires %>% summarize(mean = mean(SPAI), SD = sd(SPAI))
 paste0("subjects meeting the cut-off: ", {mean(questionnaires$SPAI >= spai.cutoff)*100} %>% round(digits=2), "% ", 
        "(N = ", sum(questionnaires$SPAI > spai.cutoff), "; ",
        "z = ", with(questionnaires, (spai.cutoff - mean(SPAI)) / sd(SPAI)) %>% round(digits=2), ")")
+questionnaires %>% summarize(max = max(SPAI), min = min(SPAI))
 
 print(spai.plot <- questionnaires %>%
   ggplot(aes(x=SPAI)) + geom_histogram(binwidth=.25, boundary=spai.cutoff, color="black", fill="grey") + 
