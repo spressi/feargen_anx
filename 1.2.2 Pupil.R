@@ -275,7 +275,7 @@ print(pupil.grandAverage.plot <- pupil %>% filter(phase=="Gen") %>% #filter(time
         geom_hline(yintercept=0) +
         #geom_ribbon(aes(ymin=mmChange-mmChange.se*1.96, ymax=mmChange+mmChange.se*1.96, fill=threat), color=NA, alpha=.1) + #replace 1.96 with qnorm(.975)?
         geom_ribbon(aes(ymin=mmChange-mmChange.se, ymax=mmChange+mmChange.se, fill=threat), color=NA, alpha=.1) + #replace 1.96 with qnorm(.975)?
-        geom_line(size=2) +
+        geom_line(size=1) +
         scale_color_manual(values=colors, labels=c("CS-", paste0("GS", 1:4), "CS+")) + scale_shape_discrete(labels=c("CS-", paste0("GS", 1:4), "CS+")) + scale_fill_manual(values=colors, labels=c("CS-", paste0("GS", 1:4), "CS+")) + 
         guides(colour=guide_legend(reverse=T), fill=guide_legend(reverse=T)) + 
         ylab(expression(Delta ~ "Pupil Size (mm)")) + xlab("Trial Time (sec)") + labs(color="Threat", fill="Threat") +
