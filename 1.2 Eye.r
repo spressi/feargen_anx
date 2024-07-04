@@ -987,12 +987,18 @@ eye.diagnosticity.spaiXdia = eye.diagnosticity.analysis %>%
   left_join(eye.diagnosticity %>% group_by(subject, Diagnosticity) %>% summarise(relDwell.se=se(relDwell*100, na.rm=T)))
 eye.diagnosticity.spaiXdia %>% group_by(Diagnosticity) %>% 
   summarise(r = cor.test(relDwell, SPAI, alternative="two.sided") %>% apa::cor_apa(r_ci=T, print=F))
+correls <- data.frame(
+  Diagnosticity = c("Diagnostic", "Non-Diagnostic")
+  #rtest = c("r = -.17","r = .18")
+)
+correls$rtest <- c(bquote(italic(r) == -0.17), bquote(italic(r) == 0.18))
 print(eye.dwell.spaiXdia <- eye.diagnosticity.spaiXdia %>% 
         ggplot(aes(y=relDwell, x=SPAI, color=SPAI)) +
         facet_wrap(vars(Diagnosticity)) +
         geom_errorbar(aes(ymin=relDwell-relDwell.se*1.96, ymax=relDwell+relDwell.se*1.96), width=spai.width) +
         geom_smooth(method="lm", color="black") + geom_point(size=4) +
         ylab("Relative Dwell Time (%)") +
+        geom_text(data = correls, aes(x = 1, y = 80, label = rtest, color = NULL,group= NULL), parse = TRUE)+
         scale_color_viridis_c() + myGgTheme + theme(legend.position = "none"))
 
 #Figure Eye Dwell Supplement
