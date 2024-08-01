@@ -155,6 +155,7 @@ print(correl.ms.plot <- data.wide %>% filter(subject %in% exclusions.eye.ms == F
           legend.position = c(.87, .87))
           #legend.position = c(.5, 1-.87))
 )
+#ggsave("plots/LDS Ratings x Latency.png", plot=correl.ms.plot, scale=1, device="png", dpi=300, units="in", width=1920/300, height = 1080/300)
 
 #ms.diag:ms.diag.type:SPAI
 # correl.ms.spaiInteraction = data.wide %>% filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
