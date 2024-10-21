@@ -157,6 +157,40 @@ print(correl.ms.plot <- data.wide %>% filter(subject %in% exclusions.eye.ms == F
 )
 #ggsave("plots/LDS Ratings x Latency.png", plot=correl.ms.plot, scale=1, device="png", dpi=300, units="in", width=1920/300, height = 1080/300)
 
+dwellers.ms = data.wide %>% mutate(Gen_all_ms.diag.md = median(Gen_all_ms, na.rm=T)) %>% 
+  transmute(subject = subject, 
+            dwell.type = ifelse(Gen_all_ms < Gen_all_ms.diag.md, "fast", "slow")) %>% na.omit()
+#dwellers.ms %>% group_by(dwell.type) %>% summarise(n=n())
+
+correl.ms.plot.gradient = dwellers.ms %>% left_join(ratings.ga.gen.subj, by="subject") %>% na.omit() %>% 
+  group_by(threat, dwell.type) %>% summarise(rating.se=se(rating, na.rm=T), rating.m=mean(rating, na.rm=T)) %>% 
+  ggplot(aes(x=threat, y=rating.m, color=dwell.type, shape=dwell.type, group=dwell.type)) +
+  geom_errorbar(aes(ymin=rating.m-rating.se, ymax=rating.m+rating.se), position=dodge, width=dodge.width) +
+  geom_line(position=dodge, size=1) +
+  geom_point(position=dodge, size=4.5) +
+  ylab("Threat Rating (1-5)") + xlab("Threat") + labs(color="Dwell Type", shape="Dwell Type") +
+  scale_color_manual(values=c("chartreuse4", "purple")) +
+  theme_bw() + theme(
+    #aspect.ratio = 1,
+    #legend.position = "none",
+    legend.position = c(.9, 1-.83),
+    panel.background = element_rect(fill="white", color="white"),
+    legend.background = element_rect(fill="white", color="grey"),
+    legend.key=element_rect(fill='white'),
+    legend.text = element_text(size=14, color="black"),
+    legend.title = element_text(size=14, color="black"),
+    axis.text = element_text(color="black"),
+    axis.text.x = element_text(size=16, color="black"),
+    axis.text.y = element_text(size=16, color="black"),
+    strip.text.x = element_text(size=12, color="black"),
+    axis.ticks.x = element_line(color="black"),
+    axis.line.x = element_line(color="black"),
+    axis.line.y = element_line(color="black"),
+    axis.title = element_text(size=16, color="black"))
+print(correl.ms.plot.gradient)
+#ggsave("plots/Correl Expectancy LDS x ms (Gradient).png", plot=correl.ms.plot.gradient, scale=1, device="png", dpi=300, units="in", width=1920/300, height = 1080/300)
+
+
 #ms.diag:ms.diag.type:SPAI
 # correl.ms.spaiInteraction = data.wide %>% filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
 #   gather("lds.type", "lds", c("Gen_eyes_lds", "Gen_mn_lds")) %>% 
@@ -476,6 +510,42 @@ reg.lds.dwell = data.wide %>% filter(subject %in% exclusions.eye.dwell == F) %>%
 reg.lds.dwell %>% summary() %>% print()
 reg.lds.dwell %>% lmer.ci()
 #reg.lds.dwell %>% lmer.ci(twotailed = F)
+
+dwellers = data.wide %>% mutate(Gen_all_dwell.md = median(Gen_all_dwell, na.rm=T)) %>% 
+  transmute(subject = subject, 
+            dwell.type = ifelse(Gen_all_dwell > Gen_all_dwell.md, "high", "low")) %>% na.omit()
+#dwellers %>% group_by(dwell.type) %>% summarise(n=n())
+
+correl.dwell.plot.gradient = dwellers %>% left_join(ratings.ga.gen.subj, by="subject") %>% na.omit() %>% 
+  group_by(threat, dwell.type) %>% summarise(rating.se=se(rating, na.rm=T), rating.m=mean(rating, na.rm=T)) %>% 
+  ggplot(aes(x=threat, y=rating.m, color=dwell.type, shape=dwell.type, group=dwell.type)) +
+  #geom_errorbar(aes(ymin=rating.m-rating.se*1.96, ymax=rating.m+rating.se*1.96), position=dodge, width=dodge.width) +
+  geom_errorbar(aes(ymin=rating.m-rating.se, ymax=rating.m+rating.se), position=dodge, width=dodge.width) +
+  geom_line(position=dodge, size=1) +
+  geom_point(position=dodge, size=4.5) +
+  ylab("Threat Rating (1-5)") + xlab("Threat") + labs(color="Dwell Type", shape="Dwell Type") +
+  scale_color_manual(values=c("chartreuse4", "purple")) +
+  theme_bw() + theme(
+    #aspect.ratio = 1,
+    #legend.position = "none",
+    #legend.position = c(.9, 1-.87),
+    legend.position = c(.9, 1-.83),
+    panel.background = element_rect(fill="white", color="white"),
+    legend.background = element_rect(fill="white", color="grey"),
+    legend.key=element_rect(fill='white'),
+    legend.text = element_text(size=14, color="black"),
+    legend.title = element_text(size=14, color="black"),
+    axis.text = element_text(color="black"),
+    axis.text.x = element_text(size=16, color="black"),
+    axis.text.y = element_text(size=16, color="black"),
+    strip.text.x = element_text(size=12, color="black"),
+    axis.ticks.x = element_line(color="black"),
+    axis.line.x = element_line(color="black"),
+    axis.line.y = element_line(color="black"),
+    axis.title = element_text(size=16, color="black"))
+print(correl.dwell.plot.gradient)
+#ggsave("plots/Correl Expectancy LDS x Dwell (Gradient).png", plot=correl.dwell.plot.gradient, scale=1, device="png", dpi=300, units="in", width=1920/300, height = 1080/300)
+
 
 #dwell*dwell.type
 # print(correl.dwell.plot <- data.wide %>% filter(subject %in% exclusions.eye.dwell == F) %>% #manual exclusion because of extreme dwell
