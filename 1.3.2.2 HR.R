@@ -465,7 +465,9 @@ heart.ga.gen.time.spaiX4 = heart %>% filter(phase == "Gen") %>%
             HRchange.se = se(HRchange, na.rm=T), HRchange = mean(HRchange, na.rm=T)) %>% 
   mutate(time = time %>% as.character() %>% as.numeric())
 heart.ga.gen.time.spaiX4 = heart.ga.gen.time.spaiX4 %>% 
+  #TODO this seems thus far the best solution for adding an origin despite several condition variables: apply to all instances of adding origins?
   full_join(tibble(time=0, HRchange=0, HRchange.se=0) %>% crossing(heart.ga.gen.time.spaiX4 %>% select(threat, spai.split, diagnostic)), .) %>% #add origin
+  #full_join(heart.ga.gen.time.spaiX4 %>% select(-time) %>% mutate(time=0, HRchange=0, HRchange.se=0) %>% unique(), .) %>% #add origin (preserves order of columns)
   mutate(spai.split = spai.split %>% factor(levels=c("LSA", "HSA"))) #low anxiety first instead of alphabetical order
 print(heart.trialtime.spai.plotX4 <- heart.ga.gen.time.spaiX4 %>% ggplot(aes(x=time, y=HRchange, color=threat, group=threat, shape=threat)) + 
         facet_grid(cols = vars(spai.split), rows = vars(diagnostic), labeller = labeller(spai.split = c(LSA = "Low Social Anxiety", HSA = "High Social Anxiety"), diagnostic = c(eyes = "Diagnostic Eyes", `mouth/nose` = "Diagnostic Mouth/Nose"))) +
