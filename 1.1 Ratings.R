@@ -131,7 +131,9 @@ ratings = ratings.all %>% subset(subject %in% exclusions == F) %>% #TODO rather 
 conditions.csp %>% filter((subject %in% exclusions) == F) %>% #all subjects with valid generalization phase
   transmute(condition = paste0(pairs, csp1, csp2)) %>% table() #condition combinations
 
-ratings.valid = ratings %>% group_by(subject, phase) %>% summarise(NAs = rating %>% is.na() %>% sum() / n()) %>% arrange(desc(NAs))
+ratings.valid = ratings %>% group_by(phase, subject) %>% summarise(NAs = rating %>% is.na() %>% sum() / n()) %>% arrange(desc(NAs))
+ratings %>% group_by(subject) %>% summarise(NAs = rating %>% is.na() %>% sum() / n()) %>% arrange(desc(NAs)) %>% summarize(M = mean(NAs), SD = sd(NAs))
+
 #hist(ratings.valid$NAs); abline(v=outlierLimit.ratings, col="red", lwd=3, lty=2) #, breaks=seq(0, outlierLimit.ratings, length.out=20+1))
 ratings.valid %>%
   ggplot(aes(x=NAs, fill=phase)) + geom_histogram(boundary=outlierLimit.ratings, color="black") + 
