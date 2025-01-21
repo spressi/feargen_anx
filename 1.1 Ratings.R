@@ -133,6 +133,7 @@ conditions.csp %>% filter((subject %in% exclusions) == F) %>% #all subjects with
 
 ratings.valid = ratings %>% group_by(phase, subject) %>% summarise(NAs = rating %>% is.na() %>% sum() / n()) %>% arrange(desc(NAs))
 ratings %>% group_by(subject) %>% summarise(NAs = rating %>% is.na() %>% sum() / n()) %>% arrange(desc(NAs)) %>% summarize(M = mean(NAs), SD = sd(NAs))
+ratings %>% filter(phase == "Gen") %>% group_by(subject) %>% summarise(NAs = rating %>% is.na() %>% sum() / n()) %>% arrange(desc(NAs)) %>% summarize(M = mean(NAs), SD = sd(NAs))
 
 #hist(ratings.valid$NAs); abline(v=outlierLimit.ratings, col="red", lwd=3, lty=2) #, breaks=seq(0, outlierLimit.ratings, length.out=20+1))
 ratings.valid %>%
