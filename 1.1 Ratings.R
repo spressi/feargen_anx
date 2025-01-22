@@ -235,8 +235,9 @@ print(ratings.gradient.STAI <- ratings.ga.gen.STAI %>% ggplot(aes(x=threat_both,
 #Figure Ratings
 #cowplot::plot_grid(ratings.trials.plot, ratings.gradient.plot + theme(legend.position="none"), ncol=1, labels="auto") %>% ggsave("figures/Figure Ratings (old).png", plot=., scale=1, device="png", dpi=300, units="in", width=6.5, height = 6.5 * 2 / sqrt(2))
 #{ratings.trials.plot / ratings.gradient.plot / ratings.gradient.STAI + plot_annotation(tag_levels = 'a')} %>% ggsave("figures/Figure Ratings.png", plot=., scale=1.8, device="png", dpi=300, units="in", width=6.5/2, height = 6.5/2 * 3 / sqrt(2))
-#{ratings.trials.plot / ((ratings.gradient.plot + theme(legend.position="none")) + (ratings.gradient.STAI + ylab("")) + plot_layout(widths=c(1.25, 1))) + plot_annotation(tag_levels = 'a')} %>% 
 {ratings.trials.plot / ((ratings.gradient.plot + theme(legend.position="none")) + (ratings.gradient.SPAI + ylab("")) + plot_layout(widths=c(1.25, 1))) + plot_annotation(tag_levels = 'a')} %>% 
+  ggsave("figures/Figure Ratings (SPAI).png", plot=., scale=1.45, device="png", dpi=300, units="in", width=6.5, height = 6.5 / sqrt(2))
+{ratings.trials.plot / ((ratings.gradient.plot + theme(legend.position="none")) + (ratings.gradient.STAI + ylab("")) + plot_layout(widths=c(1.25, 1))) + plot_annotation(tag_levels = 'a')} %>% 
   ggsave("figures/Figure Ratings.png", plot=., scale=1.45, device="png", dpi=300, units="in", width=6.5, height = 6.5 / sqrt(2))
 
 
