@@ -264,9 +264,18 @@ paste0("subjects meeting the cut-off: ", {mean(questionnaires$SPAI >= spai.cutof
 questionnaires %>% summarize(max = max(SPAI), min = min(SPAI))
 
 print(spai.plot <- questionnaires %>%
-  ggplot(aes(x=SPAI)) + geom_histogram(binwidth=.25, boundary=spai.cutoff, color="black", fill="grey") + 
-  geom_vline(xintercept=spai.cutoff, color="red") + myGgTheme + scale_y_continuous(breaks=scales::breaks_pretty()))
+        ggplot(aes(x=SPAI)) + geom_histogram(binwidth=.25, boundary=spai.cutoff, color="black", fill="grey") + 
+        geom_vline(xintercept=spai.cutoff, color="red") + myGgTheme + scale_y_continuous(breaks=scales::breaks_pretty()))
 #ggsave("plots/SPAI.png", plot=spai.plot, scale=1, device="png", dpi=300, units="in", width=1920/300, height = 1080/300)
+
+print(stai.plot <- questionnaires %>%
+        ggplot(aes(x=STAI)) + geom_histogram(binwidth=1, color="black", fill="grey") + 
+        myGgTheme + scale_y_continuous(breaks=scales::breaks_pretty()))
+#ggsave("plots/STAI.png", plot=stai.plot, scale=1, device="png", dpi=300, units="in", width=1920/300, height = 1080/300)
+
+#Figure S1
+{spai.plot / stai.plot + plot_annotation(tag_levels = 'a')} %>% 
+  ggsave("figures/Figure SPAI STAI Histograms.png", plot=., scale=1.45, device="png", dpi=300, units="in", width=6.5, height = 6.5*2 / (16/9))
 
 #questionnaires %>% filter(problem==T)
 #exclusions = exclusions %>% c(questionnaires %>% filter(problem==T) %>% .$subject) #rather don't exclude because if subjects were "lying", assume it was during sreening
