@@ -269,7 +269,7 @@ print(spai.plot <- questionnaires %>%
 #ggsave("plots/SPAI.png", plot=spai.plot, scale=1, device="png", dpi=300, units="in", width=1920/300, height = 1080/300)
 
 print(stai.plot <- questionnaires %>%
-        ggplot(aes(x=STAI)) + geom_histogram(binwidth=1, color="black", fill="grey") + 
+        ggplot(aes(x=STAI)) + geom_histogram(binwidth=2, color="black", fill="grey") + 
         myGgTheme + scale_y_continuous(breaks=scales::breaks_pretty()))
 #ggsave("plots/STAI.png", plot=stai.plot, scale=1, device="png", dpi=300, units="in", width=1920/300, height = 1080/300)
 
