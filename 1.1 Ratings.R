@@ -131,7 +131,10 @@ ratings = ratings.all %>% subset(subject %in% exclusions == F) %>% #TODO rather 
 conditions.csp %>% filter((subject %in% exclusions) == F) %>% #all subjects with valid generalization phase
   transmute(condition = paste0(pairs, csp1, csp2)) %>% table() #condition combinations
 
-ratings.valid = ratings %>% group_by(subject, phase) %>% summarise(NAs = rating %>% is.na() %>% sum() / n()) %>% arrange(desc(NAs))
+ratings.valid = ratings %>% group_by(phase, subject) %>% summarise(NAs = rating %>% is.na() %>% sum() / n()) %>% arrange(desc(NAs))
+ratings %>% group_by(subject) %>% summarise(NAs = rating %>% is.na() %>% sum() / n()) %>% arrange(desc(NAs)) %>% summarize(M = mean(NAs), SD = sd(NAs))
+ratings %>% filter(phase == "Gen") %>% group_by(subject) %>% summarise(NAs = rating %>% is.na() %>% sum() / n()) %>% arrange(desc(NAs)) %>% summarize(M = mean(NAs), SD = sd(NAs))
+
 #hist(ratings.valid$NAs); abline(v=outlierLimit.ratings, col="red", lwd=3, lty=2) #, breaks=seq(0, outlierLimit.ratings, length.out=20+1))
 ratings.valid %>%
   ggplot(aes(x=NAs, fill=phase)) + geom_histogram(boundary=outlierLimit.ratings, color="black") + 
@@ -243,8 +246,9 @@ print(ratings.gradient.STAI <- ratings.ga.gen.STAI %>% ggplot(aes(x=threat_both,
 #Figure Ratings
 #cowplot::plot_grid(ratings.trials.plot, ratings.gradient.plot + theme(legend.position="none"), ncol=1, labels="auto") %>% ggsave("figures/Figure Ratings (old).png", plot=., scale=1, device="png", dpi=300, units="in", width=6.5, height = 6.5 * 2 / sqrt(2))
 #{ratings.trials.plot / ratings.gradient.plot / ratings.gradient.STAI + plot_annotation(tag_levels = 'a')} %>% ggsave("figures/Figure Ratings.png", plot=., scale=1.8, device="png", dpi=300, units="in", width=6.5/2, height = 6.5/2 * 3 / sqrt(2))
-#{ratings.trials.plot / ((ratings.gradient.plot + theme(legend.position="none")) + (ratings.gradient.STAI + ylab("")) + plot_layout(widths=c(1.25, 1))) + plot_annotation(tag_levels = 'a')} %>% 
 {ratings.trials.plot / ((ratings.gradient.plot + theme(legend.position="none")) + (ratings.gradient.SPAI + ylab("")) + plot_layout(widths=c(1.25, 1))) + plot_annotation(tag_levels = 'a')} %>% 
+  ggsave("figures/Figure Ratings (SPAI).png", plot=., scale=1.45, device="png", dpi=300, units="in", width=6.5, height = 6.5 / sqrt(2))
+{ratings.trials.plot / ((ratings.gradient.plot + theme(legend.position="none")) + (ratings.gradient.STAI + ylab("")) + plot_layout(widths=c(1.25, 1))) + plot_annotation(tag_levels = 'a')} %>% 
   ggsave("figures/Figure Ratings.png", plot=., scale=1.45, device="png", dpi=300, units="in", width=6.5, height = 6.5 / sqrt(2))
 
 
