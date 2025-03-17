@@ -266,6 +266,10 @@ questionnaires %>% summarize(max = max(SPAI), min = min(SPAI))
 print(spai.plot <- questionnaires %>%
   ggplot(aes(x=SPAI)) + geom_histogram(binwidth=.25, boundary=spai.cutoff, color="black", fill="grey") + 
   geom_vline(xintercept=spai.cutoff, color="red") + myGgTheme + scale_y_continuous(breaks=scales::breaks_pretty()))
+
+questionnaires %>% summarize(mean = mean(STAI), SD = sd(STAI))
+questionnaires %>% summarize(max = max(STAI), min = min(STAI))
+
 #ggsave("plots/SPAI.png", plot=spai.plot, scale=1, device="png", dpi=300, units="in", width=1920/300, height = 1080/300)
 
 #questionnaires %>% filter(problem==T)

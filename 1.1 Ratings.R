@@ -139,6 +139,17 @@ ratings.valid %>%
 #ratings.valid %>% arrange(desc(NAs))
 print(problem <- ratings %>% group_by(subject, phase) %>% summarise(NAs = rating %>% is.na() %>% sum() / n()) %>% arrange(desc(NAs)) %>% filter(NAs > outlierLimit.ratings))
 
+ratings.valid.gen <- ratings.valid %>%
+  filter(phase=="Gen")
+
+ratings.valid %>%
+  filter(phase=="Gen")%>%
+  ungroup()%>%
+  summarize(
+    mean = mean(NAs),
+    sd = sd(NAs)
+  )
+  
 exclusions.rating = problem %>% filter(phase=="Gen") %>% .$subject %>% unique() %>% c(exclusions)
 ratings = ratings %>% filter(subject %in% exclusions.rating == F)
 

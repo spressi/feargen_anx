@@ -161,6 +161,37 @@ heart = heart.wide %>% subset(subject %in% exclusions.hr == F) %>% gather(key="t
 #         ylab("Heart Rate Change (bpm)") + xlab("Trial Time (sec)") + myGgTheme)
 
 #plot hr change over trial time with factor threat
+# bl <- heart.ga.gen.time %>% group_by(threat) %>% summarize(value = mean(HRbl, na.rm=T))
+# test <- data.frame(threat=unique(heart$threat), time=0)%>%
+#               mutate(HRchange = case_when(
+#                 threat==1 ~ as.double(bl[1,2]),
+#                 threat==2 ~ as.double(bl[2,2]),
+#                 threat==3 ~ as.double(bl[3,2]),
+#                 threat==4 ~ as.double(bl[4,2]),
+#                 threat==5 ~ as.double(bl[5,2]),
+#                 threat==6 ~ as.double(bl[6,2])),
+#                 HRchange.se = 0
+#               )
+# 
+# heart.ga.gen.time = heart %>% filter(phase == "Gen") %>% group_by(threat, time) %>% 
+#   mutate(HR = HRchange + hrbl)%>%
+#   mutate(spai.split = ifelse(SPAI.z >= 0, "HSA", "LSA")) %>%
+#   filter(spai.split == "LSA")%>%
+#   summarise(HRchange.se = se(HR, na.rm=T), HRchange = mean(HR, na.rm=T)) %>% 
+#   mutate(time = time %>% as.character() %>% as.numeric()) %>% 
+#   bind_rows(test)#add origin
+# 
+# 
+# print(heart.trialtime.plot <- heart.ga.gen.time %>% ggplot(aes(x=time, y=HRchange, color=threat, group=threat, shape=threat)) + 
+#         #geom_hline(yintercept = 0, linetype="dashed") +
+#         geom_ribbon(aes(ymin=HRchange-HRchange.se*1.96, ymax=HRchange+HRchange.se*1.96, fill=threat), color=NA, alpha=.1) +
+#         #geom_errorbar(aes(ymin=HRchange-HRchange.se*1.96, ymax=HRchange+HRchange.se*1.96)) +
+#         geom_point(size=3) + geom_line() + 
+#         scale_color_manual(values=colors, labels=c("CS-", paste0("GS", 1:4), "CS+")) + scale_shape_discrete(labels=c("CS-", paste0("GS", 1:4), "CS+")) + scale_fill_manual(values=colors, labels=c("CS-", paste0("GS", 1:4), "CS+")) + 
+#         ylab(expression( "Heart Rate (bpm)")) + xlab("Trial Time (sec)") + labs(color="Threat", shape="Threat", fill="Threat") + myGgTheme)
+# #ggsave("plots/Heart Time.png", plot=heart.trialtime.plot, scale=1, device="png", dpi=300, units="in", width=1920/300, height = 1080/300)
+
+#plot hr change over trial time with factor threat
 heart.ga.gen.time = heart %>% filter(phase == "Gen") %>% group_by(threat, time) %>% 
   summarise(HRchange.se = se(HRchange, na.rm=T), HRchange = mean(HRchange, na.rm=T)) %>% 
   mutate(time = time %>% as.character() %>% as.numeric()) %>% 
