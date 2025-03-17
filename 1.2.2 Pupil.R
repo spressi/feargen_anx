@@ -179,6 +179,18 @@ anova.pupil = pupil.subject %>% filter(phase=="Gen") %>%
 anova.pupil %>% apa::anova_apa(force_sph_corr = T)
 #anova.pupil %>% ez.ci()
 
+# Check effects of Medication 
+anova.pupil = pupil.subject %>% filter(phase=="Gen") %>% 
+  ungroup() %>% mutate(SPAI = scale(SPAI)[,1], STAI = scale(STAI)[,1]) %>% 
+  ez::ezANOVA(dv=.(mmChange), wid=.(subject),
+              #within=.(threat), within_full=.(diagnostic),
+              within=.(threat, diagnostic),
+              between=.(Medication), observed=Medication,
+              #between=.(STAI), observed=STAI,
+              detailed=T, type=2)
+anova.pupil %>% apa::anova_apa(force_sph_corr = T)
+
+
 #threat
 pupil.subject %>% filter(phase=="Gen") %>% group_by(threat, subject) %>% summarise(mmChange = mean(mmChange, na.rm=T)) %>% 
   summarise(mmChange.se = se(mmChange, na.rm=T), mmChange = mean(mmChange, na.rm=T))

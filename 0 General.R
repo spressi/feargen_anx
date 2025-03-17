@@ -248,10 +248,11 @@ files.phys = list.files(path.phys, pattern=".*.txt") #load physiology
 
 questionnaires = suppressMessages( #avoid name repair message (affected columns will be deselected anyway)
   readxl::read_excel("Daten_Fragebögen.xlsx" %>% paste0(path, "Data/", .),
-                     sheet = "Daten_FB_gesamt", skip=2, col_names=T)) %>% select(1:5) %>% rename(subject = `VP-Nr`) %>% 
+                     sheet = "Daten_FB_gesamt", skip=2, col_names=T)) %>% select(1:6) %>% rename(subject = `VP-Nr`) %>% 
   mutate(subject = subject %>% gsub("vp", "", ., fixed=T) %>% as.integer(), #warning is due to subject "vp00 (Test)" - will be deleted anyway
          SPAI = SPAI / 22, #German SPAI version: mean item scores, not sum scores (for comparison with cut-off values)
          discr = Screening_nachher - Screening_vorher,
+         Medication = Medication,
          problem = abs(discr) > 1.5, problem = ifelse(problem %>% is.na(), F, problem)) %>% 
   filter(subject %>% is.na() == F, subject > 0, #get rid of test subject & empty rows
          subject %in% exclusions == F) #apply a priori exclusions
@@ -264,17 +265,13 @@ paste0("subjects meeting the cut-off: ", {mean(questionnaires$SPAI >= spai.cutof
 questionnaires %>% summarize(max = max(SPAI), min = min(SPAI))
 
 print(spai.plot <- questionnaires %>%
-<<<<<<< HEAD
-  ggplot(aes(x=SPAI)) + geom_histogram(binwidth=.25, boundary=spai.cutoff, color="black", fill="grey") + 
-  geom_vline(xintercept=spai.cutoff, color="red") + myGgTheme + scale_y_continuous(breaks=scales::breaks_pretty()))
+
+ggplot(aes(x=SPAI)) + geom_histogram(binwidth=.25, boundary=spai.cutoff, color="black", fill="grey") + 
+geom_vline(xintercept=spai.cutoff, color="red") + myGgTheme + scale_y_continuous(breaks=scales::breaks_pretty()))
 
 questionnaires %>% summarize(mean = mean(STAI), SD = sd(STAI))
 questionnaires %>% summarize(max = max(STAI), min = min(STAI))
 
-=======
-        ggplot(aes(x=SPAI)) + geom_histogram(binwidth=.25, boundary=spai.cutoff, color="black", fill="grey") + 
-        geom_vline(xintercept=spai.cutoff, color="red") + myGgTheme + scale_y_continuous(breaks=scales::breaks_pretty()))
->>>>>>> af14aa1e7542bbccc8751d767fd0768d66f2fdfe
 #ggsave("plots/SPAI.png", plot=spai.plot, scale=1, device="png", dpi=300, units="in", width=1920/300, height = 1080/300)
 
 print(stai.plot <- questionnaires %>%

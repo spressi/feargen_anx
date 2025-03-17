@@ -308,13 +308,21 @@ ratings.subject %>% filter(phase == "Acq") %>% group_by(threat) %>% summarise(ra
 
 # ANOVA Generalization Phase (SPAI)
 ratings.subject.gen.diagnostic = ratings.gen %>% 
-  group_by(subject, SPAI, SPAI.z, STAI, STAI.z, threat, diagnostic, pairs) %>% 
-  summarise(rating.m=mean(rating, na.rm=T), rating.se=se(rating, na.rm=T))
+  group_by(subject, SPAI, SPAI.z, STAI, STAI.z, threat, diagnostic, pairs, Medication) %>% 
+  summarise(rating.m=mean(rating, na.rm=T), rating.se=se(rating, na.rm=T)) 
 ez::ezANOVA(data=ratings.subject.gen.diagnostic, 
             dv=.(rating.m), wid=.(subject), 
             within=.(threat, diagnostic), 
             #between=.(pairs),
             between=.(SPAI.z), observed=SPAI.z,
+            detailed=T, type=2) %>% apa::anova_apa(force_sph_corr=T)
+
+# Check Medication 
+ez::ezANOVA(data=ratings.subject.gen.diagnostic, 
+            dv=.(rating.m), wid=.(subject), 
+            within=.(threat, diagnostic), 
+            #between=.(pairs),
+            between=.(Medication), observed=Medication,
             detailed=T, type=2) %>% apa::anova_apa(force_sph_corr=T)
 
 ez::ezANOVA(data=ratings.subject.gen.diagnostic, 

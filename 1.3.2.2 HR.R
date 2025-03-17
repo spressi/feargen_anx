@@ -140,7 +140,8 @@ heart = heart.wide %>% subset(subject %in% exclusions.hr == F) %>% gather(key="t
          pairs = ifelse(pair %in% c(1, 4), 1, 2) %>% as.factor(), 
          threat = as.factor(ifelse(pair %in% 2:3 & threat %in% 2:5, 7 - threat, threat)),
          time = time %>% gsub("hr.", "", .) %>% as.integer() %>% {. / 2} %>% as.factor(),
-         SPAI.z = scale(SPAI)[,1], STAI.z = scale(STAI)[,1]) %>% select(-condition)
+         SPAI.z = scale(SPAI)[,1], STAI.z = scale(STAI)[,1],
+         Medication = Medication) %>% select(-condition)
 
 #all(heart == read_rds("heart.rds" %>% paste0(path.rds, .)), na.rm=T) #check equivalence of processing
 #heart %>% write_rds("heart.rds" %>% paste0(path.rds, .))
@@ -227,7 +228,7 @@ print(heart.trialtime.spai.plot <- heart.ga.gen.time.spai %>% ggplot(aes(x=time,
 
 #this is an oversimplification now (cf. exploration)
 heart.simple = heart %>% #filter(shockPrior==F) %>% 
-  group_by(subject, threat, pair, diagnostic, sex, phase, pairs, SPAI, SPAI.z, STAI, STAI.z) %>% #group_by_at(vars(-trial, -time, -shock, -shockPrior, -hrbl, -HRchange)) %>% 
+  group_by(subject, threat, pair, diagnostic, sex, phase, pairs, SPAI, SPAI.z, STAI, STAI.z, Medication) %>% #group_by_at(vars(-trial, -time, -shock, -shockPrior, -hrbl, -HRchange)) %>% 
   summarise(HRchange.se = se(HRchange, na.rm=T), HRchange = mean(HRchange, na.rm=T), hrbl = mean(hrbl, na.rm=T))
 
 heart.simple.gen = heart.simple %>% filter(phase == "Gen")
@@ -303,6 +304,14 @@ ez::ezANOVA(data=heart.simple.gen,
             dv=.(HRchange), wid=.(subject), 
             within=.(threat, diagnostic), 
             between=.(STAI.z), observed=.(STAI.z),
+            #between=.(pairs),
+            detailed=T, type=2) %>% apa::anova_apa(force_sph_corr=T)
+
+# check medication effects
+ez::ezANOVA(data=heart.simple.gen, 
+            dv=.(HRchange), wid=.(subject), 
+            within=.(threat, diagnostic), 
+            between=.(Medication), observed=.(Medication),
             #between=.(pairs),
             detailed=T, type=2) %>% apa::anova_apa(force_sph_corr=T)
 

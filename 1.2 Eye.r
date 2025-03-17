@@ -865,7 +865,8 @@ eye.gen = eye %>% filter(phase == "Gen") %>% group_by(subject) %>%
             mFixTime.m = mean(mFixTime, na.rm=T), mFixTime.se = se(mFixTime, na.rm=T),
             roiSwitch.m = mean(roiSwitch, na.rm=T), roiSwitch.se = se(roiSwitch, na.rm=T),
             scanPath.m = mean(scanPath, na.rm=T), scanPath.se = se(scanPath, na.rm=T),
-            SPAI = mean(SPAI), STAI = mean(STAI)) %>% 
+            SPAI = mean(SPAI), STAI = mean(STAI),
+            Medication = Medication) %>% 
   select("subject", contains(".m"), everything())
 
 eye.gen.diagnostic = eye %>% filter(phase == "Gen") %>% group_by(subject, diagnostic) %>% 
@@ -879,7 +880,8 @@ eye.gen.diagnostic = eye %>% filter(phase == "Gen") %>% group_by(subject, diagno
             mFixTime.m = mean(mFixTime, na.rm=T), mFixTime.se = se(mFixTime, na.rm=T),
             roiSwitch.m = mean(roiSwitch, na.rm=T), roiSwitch.se = se(roiSwitch, na.rm=T),
             scanPath.m = mean(scanPath, na.rm=T), scanPath.se = se(scanPath, na.rm=T),
-            SPAI = mean(SPAI), STAI = mean(STAI)) %>% 
+            SPAI = mean(SPAI), STAI = mean(STAI),
+            Medication = Medication) %>% 
   select("subject", "diagnostic", contains(".m"), everything())
 
 
@@ -1030,7 +1032,7 @@ eye.diagnosticity.spaiXdia %>% group_by(Diagnosticity) %>%
               rename(r = estimate, p = p.value, t = statistic) %>% select(r, p, t)) #TODO CI? => do by hand with residuals?)
 
 # Hypotheses Latency ------------------------------------------------------
-eye.diagnosticity.ms.subj = eye.diagnosticity.ms %>% group_by(subject, SPAI, STAI, ROI, Diagnosticity, diagnostic) %>% 
+eye.diagnosticity.ms.subj = eye.diagnosticity.ms %>% group_by(subject, SPAI, STAI, ROI, Diagnosticity, diagnostic, Medication) %>% 
   summarise(ms=mean(ms, na.rm=T)) %>% ungroup() %>% 
   mutate(ms = ms / 1000) #readability of plot -> convert to sec
 
@@ -1162,6 +1164,14 @@ eye.diagnosticity.ms_sqrt.analysis %>% filter(subject %in% exclusions.eye.ms == 
               within=.(ROI, Diagnosticity), #within_full=.(threat),
               #within=.(threat, ROI, Diagnosticity),
               between=.(STAI), observed=STAI,
+              detailed=T, type=2) %>% apa::anova_apa(force_sph_corr=T)
+
+# Check Medication Effect
+eye.diagnosticity.ms_sqrt.analysis %>% filter(subject %in% exclusions.eye.ms == F) %>% #manual exclusion because of extreme latency
+  ez::ezANOVA(dv=.(ms), wid=.(subject),
+              within=.(ROI, Diagnosticity), #within_full=.(threat),
+              #within=.(threat, ROI, Diagnosticity),
+              between=.(Medication), observed=Medication,
               detailed=T, type=2) %>% apa::anova_apa(force_sph_corr=T)
 
 eye.diagnosticity.ms_sqrt.subj.analysis = eye.diagnosticity.ms_sqrt.analysis %>% filter(subject %in% exclusions.eye.ms == F) #manual exclusion because of extreme latency
